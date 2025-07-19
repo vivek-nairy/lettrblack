@@ -19,6 +19,9 @@ import { getGroupsByUser, createGroup } from "@/lib/firestore-utils";
 import { addXpToUser } from "@/lib/firestore-utils";
 import { useAuthUser } from "../hooks/useAuthUser";
 import { useNavigate } from "react-router-dom";
+import { Dialog } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 const categories = ["All", "Programming", "Math", "Language", "Science"];
 const sortOptions = [
@@ -38,6 +41,11 @@ export function Groups() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [sortBy, setSortBy] = useState("Recent Activity");
   const [showFilters, setShowFilters] = useState(false);
+  const [createGroupName, setCreateGroupName] = useState("");
+  const [createGroupSubject, setCreateGroupSubject] = useState("");
+  const [createGroupDescription, setCreateGroupDescription] = useState("");
+  const [createGroupError, setCreateGroupError] = useState("");
+  const [createGroupLoading, setCreateGroupLoading] = useState(false);
 
   useEffect(() => {
     if (firebaseUser) {
@@ -45,20 +53,42 @@ export function Groups() {
     }
   }, [firebaseUser]);
 
-  const handleCreateGroup = async (groupData) => {
-    if (!firebaseUser) return;
-    const newGroup = {
-      ...groupData,
-      id: crypto.randomUUID(),
-      ownerId: firebaseUser.uid,
-      memberIds: [firebaseUser.uid],
-      inviteCode: Math.random().toString(36).substring(2, 8),
-      createdAt: Date.now(),
-    };
-    await createGroup(newGroup);
-    await addXpToUser(firebaseUser.uid, 50, "create_group", 50);
-    setShowCreateModal(false);
-    getGroupsByUser(firebaseUser.uid).then(setGroups);
+  const handleCreateGroup = async () => {
+    setCreateGroupError("");
+    if (!firebaseUser) {
+      setCreateGroupError("You must be signed in to create a group.");
+      return;
+    }
+    if (!createGroupName.trim() || !createGroupSubject.trim()) {
+      setCreateGroupError("Group name and subject are required.");
+      return;
+    }
+    setCreateGroupLoading(true);
+    try {
+      const newGroup = {
+        name: createGroupName.trim(),
+        subject: createGroupSubject.trim(),
+        description: createGroupDescription.trim(),
+        id: crypto.randomUUID(),
+        ownerId: firebaseUser.uid,
+        memberIds: [firebaseUser.uid],
+        inviteCode: Math.random().toString(36).substring(2, 8),
+        createdAt: Date.now(),
+      };
+      await createGroup(newGroup);
+      await addXpToUser(firebaseUser.uid, 50, "create_group", 50);
+      setShowCreateModal(false);
+      setCreateGroupName("");
+      setCreateGroupSubject("");
+      setCreateGroupDescription("");
+      getGroupsByUser(firebaseUser.uid).then(setGroups);
+    } catch (err) {
+      setCreateGroupError(
+        err?.message || "Failed to create group. Please try again."
+      );
+    } finally {
+      setCreateGroupLoading(false);
+    }
   };
 
   const filteredGroups = groups
@@ -354,6 +384,53 @@ export function Groups() {
             <Plus className="w-6 h-6" />
           </button>
         </div>
+
+        {/* Create Group Modal */}
+        <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+            <div className="bg-card border border-border rounded-xl w-full max-w-md p-6">
+              <h2 className="text-xl font-semibold mb-4">Create a New Group</h2>
+              {createGroupError && (
+                <div className="mb-3 text-destructive text-sm">{createGroupError}</div>
+              )}
+              <div className="space-y-3">
+                <Input
+                  placeholder="Group Name *"
+                  value={createGroupName}
+                  onChange={e => setCreateGroupName(e.target.value)}
+                  disabled={createGroupLoading}
+                />
+                <Input
+                  placeholder="Subject *"
+                  value={createGroupSubject}
+                  onChange={e => setCreateGroupSubject(e.target.value)}
+                  disabled={createGroupLoading}
+                />
+                <Input
+                  placeholder="Description (optional)"
+                  value={createGroupDescription}
+                  onChange={e => setCreateGroupDescription(e.target.value)}
+                  disabled={createGroupLoading}
+                />
+              </div>
+              <div className="flex gap-2 mt-6 justify-end">
+                <Button
+                  variant="secondary"
+                  onClick={() => setShowCreateModal(false)}
+                  disabled={createGroupLoading}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleCreateGroup}
+                  disabled={createGroupLoading}
+                >
+                  {createGroupLoading ? "Creating..." : "Create Group"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Dialog>
       </div>
     </Layout>
   );
