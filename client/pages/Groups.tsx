@@ -46,6 +46,7 @@ const initialModalState = {
 };
 
 function modalReducer(state, action) {
+  console.log("[modalReducer] action:", action, "prevState:", state);
   switch (action.type) {
     case "OPEN":
       return { ...initialModalState, open: true };
@@ -79,6 +80,10 @@ export function Groups() {
       getGroupsByUser(firebaseUser.uid).then(setGroups);
     }
   }, [firebaseUser]);
+
+  useEffect(() => {
+    console.log("[Groups] modal.open:", modal.open);
+  }, [modal.open]);
 
   const handleCreateGroup = async () => {
     dispatchModal({ type: "SET_ERROR", error: "" });
@@ -426,7 +431,10 @@ export function Groups() {
         </div>
 
         {/* Create Group Modal */}
-        <Dialog open={modal.open} onOpenChange={open => dispatchModal({ type: open ? "OPEN" : "CLOSE" })}>
+        <Dialog open={modal.open} onOpenChange={open => {
+          console.log("[Dialog onOpenChange] open:", open);
+          dispatchModal({ type: open ? "OPEN" : "CLOSE" });
+        }}>
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
             <div className="bg-card border border-border rounded-xl w-full max-w-md p-6">
               <h2 className="text-xl font-semibold mb-4">Create a New Group</h2>
