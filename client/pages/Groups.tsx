@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useReducer, useEffect, useState } from "react";
 import { Layout } from "@/components/Layout";
 import {
   Search,
@@ -34,24 +34,45 @@ const sortOptions = [
   "Alphabetical",
 ];
 
+const initialModalState = {
+  open: false,
+  name: "",
+  subject: "",
+  description: "",
+  image: null,
+  imageUrl: "",
+  error: "",
+  loading: false,
+};
+
+function modalReducer(state, action) {
+  switch (action.type) {
+    case "OPEN":
+      return { ...initialModalState, open: true };
+    case "CLOSE":
+      return { ...initialModalState };
+    case "SET_FIELD":
+      return { ...state, [action.field]: action.value };
+    case "SET_ERROR":
+      return { ...state, error: action.error };
+    case "SET_LOADING":
+      return { ...state, loading: action.loading };
+    default:
+      return state;
+  }
+}
+
 export function Groups() {
   const { user, firebaseUser } = useAuthUser();
   const navigate = useNavigate();
   const [groups, setGroups] = useState([]);
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [sortBy, setSortBy] = useState("Recent Activity");
   const [showFilters, setShowFilters] = useState(false);
-  const [createGroupName, setCreateGroupName] = useState("");
-  const [createGroupSubject, setCreateGroupSubject] = useState("");
-  const [createGroupDescription, setCreateGroupDescription] = useState("");
-  const [createGroupError, setCreateGroupError] = useState("");
-  const [createGroupLoading, setCreateGroupLoading] = useState(false);
-  const [createGroupImage, setCreateGroupImage] = useState<File | null>(null);
-  const [createGroupImageUrl, setCreateGroupImageUrl] = useState("");
   const [selectedGroup, setSelectedGroup] = useState<any>(null);
+  const [modal, dispatchModal] = useReducer(modalReducer, initialModalState);
 
   useEffect(() => {
     if (firebaseUser) {
@@ -60,27 +81,27 @@ export function Groups() {
   }, [firebaseUser]);
 
   const handleCreateGroup = async () => {
-    setCreateGroupError("");
+    dispatchModal({ type: "SET_ERROR", error: "" });
     if (!firebaseUser) {
-      setCreateGroupError("You must be signed in to create a group.");
+      dispatchModal({ type: "SET_ERROR", error: "You must be signed in to create a group." });
       return;
     }
-    if (!createGroupName.trim() || !createGroupSubject.trim()) {
-      setCreateGroupError("Group name and subject are required.");
+    if (!modal.name.trim() || !modal.subject.trim()) {
+      dispatchModal({ type: "SET_ERROR", error: "Group name and subject are required." });
       return;
     }
-    setCreateGroupLoading(true);
+    dispatchModal({ type: "SET_LOADING", loading: true });
     try {
       let bannerUrl = "";
-      if (createGroupImage) {
-        const fileRef = ref(storage, `group-banners/${firebaseUser.uid}_${Date.now()}_${createGroupImage.name}`);
-        await uploadBytes(fileRef, createGroupImage);
+      if (modal.image) {
+        const fileRef = ref(storage, `group-banners/${firebaseUser.uid}_${Date.now()}_${modal.image.name}`);
+        await uploadBytes(fileRef, modal.image);
         bannerUrl = await getDownloadURL(fileRef);
       }
       const newGroup = {
-        name: createGroupName.trim(),
-        subject: createGroupSubject.trim(),
-        description: createGroupDescription.trim(),
+        name: modal.name.trim(),
+        subject: modal.subject.trim(),
+        description: modal.description.trim(),
         bannerUrl,
         id: crypto.randomUUID(),
         ownerId: firebaseUser.uid,
@@ -90,26 +111,13 @@ export function Groups() {
       };
       await createGroup(newGroup);
       await addXpToUser(firebaseUser.uid, 50, "create_group", 50);
-      resetCreateGroupForm();
-      setShowCreateModal(false);
+      dispatchModal({ type: "CLOSE" });
       getGroupsByUser(firebaseUser.uid).then(setGroups);
     } catch (err) {
-      setCreateGroupError(
-        err?.message || "Failed to create group. Please try again."
-      );
+      dispatchModal({ type: "SET_ERROR", error: err?.message || "Failed to create group. Please try again." });
     } finally {
-      setCreateGroupLoading(false);
+      dispatchModal({ type: "SET_LOADING", loading: false });
     }
-  };
-
-  const resetCreateGroupForm = () => {
-    setCreateGroupName("");
-    setCreateGroupSubject("");
-    setCreateGroupDescription("");
-    setCreateGroupImage(null);
-    setCreateGroupImageUrl("");
-    setCreateGroupError("");
-    setCreateGroupLoading(false);
   };
 
   const filteredGroups = groups
@@ -163,7 +171,7 @@ export function Groups() {
 
           <div className="flex items-center gap-3">
             <button
-              onClick={() => setShowCreateModal(true)}
+              onClick={() => dispatchModal({ type: "OPEN" })}
               className="lettrblack-button flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
@@ -391,7 +399,7 @@ export function Groups() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
-                onClick={() => setShowCreateModal(true)}
+                onClick={() => dispatchModal({ type: "OPEN" })}
                 className="lettrblack-button flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
@@ -411,38 +419,38 @@ export function Groups() {
         <div className="fixed bottom-6 right-6 z-40">
           <button
             className="lettrblack-button w-14 h-14 rounded-full shadow-2xl hover:shadow-primary/25 transition-all duration-300 hover:scale-110 flex items-center justify-center"
-            onClick={() => setShowCreateModal(true)}
+            onClick={() => dispatchModal({ type: "OPEN" })}
           >
             <Plus className="w-6 h-6" />
           </button>
         </div>
 
         {/* Create Group Modal */}
-        <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+        <Dialog open={modal.open} onOpenChange={open => dispatchModal({ type: open ? "OPEN" : "CLOSE" })}>
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
             <div className="bg-card border border-border rounded-xl w-full max-w-md p-6">
               <h2 className="text-xl font-semibold mb-4">Create a New Group</h2>
-              {createGroupError && (
-                <div className="mb-3 text-destructive text-sm">{createGroupError}</div>
+              {modal.error && (
+                <div className="mb-3 text-destructive text-sm">{modal.error}</div>
               )}
               <div className="space-y-3">
                 <Input
                   placeholder="Group Name *"
-                  value={createGroupName}
-                  onChange={e => setCreateGroupName(e.target.value)}
-                  disabled={createGroupLoading}
+                  value={modal.name}
+                  onChange={e => dispatchModal({ type: "SET_FIELD", field: "name", value: e.target.value })}
+                  disabled={modal.loading}
                 />
                 <Input
                   placeholder="Subject *"
-                  value={createGroupSubject}
-                  onChange={e => setCreateGroupSubject(e.target.value)}
-                  disabled={createGroupLoading}
+                  value={modal.subject}
+                  onChange={e => dispatchModal({ type: "SET_FIELD", field: "subject", value: e.target.value })}
+                  disabled={modal.loading}
                 />
                 <Input
                   placeholder="Description (optional)"
-                  value={createGroupDescription}
-                  onChange={e => setCreateGroupDescription(e.target.value)}
-                  disabled={createGroupLoading}
+                  value={modal.description}
+                  onChange={e => dispatchModal({ type: "SET_FIELD", field: "description", value: e.target.value })}
+                  disabled={modal.loading}
                 />
                 <div>
                   <label className="block text-sm font-medium mb-1">Group Banner (optional)</label>
@@ -451,33 +459,30 @@ export function Groups() {
                     accept="image/*"
                     onChange={e => {
                       if (e.target.files && e.target.files[0]) {
-                        setCreateGroupImage(e.target.files[0]);
-                        setCreateGroupImageUrl(URL.createObjectURL(e.target.files[0]));
+                        dispatchModal({ type: "SET_FIELD", field: "image", value: e.target.files[0] });
+                        dispatchModal({ type: "SET_FIELD", field: "imageUrl", value: URL.createObjectURL(e.target.files[0]) });
                       }
                     }}
-                    disabled={createGroupLoading}
+                    disabled={modal.loading}
                   />
-                  {createGroupImageUrl && (
-                    <img src={createGroupImageUrl} alt="Preview" className="mt-2 w-full h-32 object-cover rounded-lg border" />
+                  {modal.imageUrl && (
+                    <img src={modal.imageUrl} alt="Preview" className="mt-2 w-full h-32 object-cover rounded-lg border" />
                   )}
                 </div>
               </div>
               <div className="flex gap-2 mt-6 justify-end">
                 <Button
                   variant="secondary"
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    resetCreateGroupForm();
-                  }}
-                  disabled={createGroupLoading}
+                  onClick={() => dispatchModal({ type: "CLOSE" })}
+                  disabled={modal.loading}
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleCreateGroup}
-                  disabled={createGroupLoading}
+                  disabled={modal.loading}
                 >
-                  {createGroupLoading ? "Saving..." : "Save"}
+                  {modal.loading ? "Saving..." : "Save"}
                 </Button>
               </div>
             </div>
