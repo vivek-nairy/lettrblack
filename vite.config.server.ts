@@ -32,6 +32,8 @@ export default defineConfig({
         // External dependencies that should not be bundled
         "express",
         "cors",
+        // Add Rollup native binary to external to avoid missing module error
+        "@rollup/rollup-linux-x64-gnu",
       ],
       output: {
         format: "es",
