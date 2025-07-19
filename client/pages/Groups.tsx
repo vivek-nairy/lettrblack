@@ -53,6 +53,11 @@ export function Groups() {
   const [createGroupImageUrl, setCreateGroupImageUrl] = useState("");
   const [selectedGroup, setSelectedGroup] = useState<any>(null);
 
+  // Always reset create modal on mount
+  useEffect(() => {
+    setShowCreateModal(false);
+  }, []);
+
   useEffect(() => {
     if (firebaseUser) {
       getGroupsByUser(firebaseUser.uid).then(setGroups);
