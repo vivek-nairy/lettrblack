@@ -22,6 +22,9 @@ import { useNavigate } from "react-router-dom";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { storage } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { GroupChat } from "@/components/GroupChat";
 
 const categories = ["All", "Programming", "Math", "Language", "Science"];
 const sortOptions = [
@@ -46,6 +49,9 @@ export function Groups() {
   const [createGroupDescription, setCreateGroupDescription] = useState("");
   const [createGroupError, setCreateGroupError] = useState("");
   const [createGroupLoading, setCreateGroupLoading] = useState(false);
+  const [createGroupImage, setCreateGroupImage] = useState<File | null>(null);
+  const [createGroupImageUrl, setCreateGroupImageUrl] = useState("");
+  const [selectedGroup, setSelectedGroup] = useState<any>(null);
 
   useEffect(() => {
     if (firebaseUser) {
@@ -65,10 +71,17 @@ export function Groups() {
     }
     setCreateGroupLoading(true);
     try {
+      let bannerUrl = "";
+      if (createGroupImage) {
+        const fileRef = ref(storage, `group-banners/${firebaseUser.uid}_${Date.now()}_${createGroupImage.name}`);
+        await uploadBytes(fileRef, createGroupImage);
+        bannerUrl = await getDownloadURL(fileRef);
+      }
       const newGroup = {
         name: createGroupName.trim(),
         subject: createGroupSubject.trim(),
         description: createGroupDescription.trim(),
+        bannerUrl,
         id: crypto.randomUUID(),
         ownerId: firebaseUser.uid,
         memberIds: [firebaseUser.uid],
@@ -77,10 +90,7 @@ export function Groups() {
       };
       await createGroup(newGroup);
       await addXpToUser(firebaseUser.uid, 50, "create_group", 50);
-      setShowCreateModal(false);
-      setCreateGroupName("");
-      setCreateGroupSubject("");
-      setCreateGroupDescription("");
+      handleCancelCreateGroup();
       getGroupsByUser(firebaseUser.uid).then(setGroups);
     } catch (err) {
       setCreateGroupError(
@@ -89,6 +99,17 @@ export function Groups() {
     } finally {
       setCreateGroupLoading(false);
     }
+  };
+
+  const handleCancelCreateGroup = () => {
+    setShowCreateModal(false);
+    setCreateGroupName("");
+    setCreateGroupSubject("");
+    setCreateGroupDescription("");
+    setCreateGroupImage(null);
+    setCreateGroupImageUrl("");
+    setCreateGroupError("");
+    setCreateGroupLoading(false);
   };
 
   const filteredGroups = groups
@@ -115,6 +136,15 @@ export function Groups() {
 
   const calculateProgress = (current: number, next: number) => {
     return Math.min((current / next) * 100, 100);
+  };
+
+  // Add handler to open group details
+  const handleOpenGroup = (group: any) => {
+    setSelectedGroup(group);
+  };
+  // Add handler to close group details
+  const handleCloseGroup = () => {
+    setSelectedGroup(null);
   };
 
   return (
@@ -234,6 +264,7 @@ export function Groups() {
                   group.color,
                   "border border-border rounded-xl p-6 hover:scale-[1.02] transition-all duration-300 cursor-pointer backdrop-blur-sm",
                 )}
+                onClick={() => handleOpenGroup(group)}
               >
                 {/* Active Indicator */}
                 {group.isActive && (
@@ -386,7 +417,7 @@ export function Groups() {
         </div>
 
         {/* Create Group Modal */}
-        <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+        <Dialog open={showCreateModal} onOpenChange={handleCancelCreateGroup}>
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
             <div className="bg-card border border-border rounded-xl w-full max-w-md p-6">
               <h2 className="text-xl font-semibold mb-4">Create a New Group</h2>
@@ -412,11 +443,28 @@ export function Groups() {
                   onChange={e => setCreateGroupDescription(e.target.value)}
                   disabled={createGroupLoading}
                 />
+                <div>
+                  <label className="block text-sm font-medium mb-1">Group Banner (optional)</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={e => {
+                      if (e.target.files && e.target.files[0]) {
+                        setCreateGroupImage(e.target.files[0]);
+                        setCreateGroupImageUrl(URL.createObjectURL(e.target.files[0]));
+                      }
+                    }}
+                    disabled={createGroupLoading}
+                  />
+                  {createGroupImageUrl && (
+                    <img src={createGroupImageUrl} alt="Preview" className="mt-2 w-full h-32 object-cover rounded-lg border" />
+                  )}
+                </div>
               </div>
               <div className="flex gap-2 mt-6 justify-end">
                 <Button
                   variant="secondary"
-                  onClick={() => setShowCreateModal(false)}
+                  onClick={handleCancelCreateGroup}
                   disabled={createGroupLoading}
                 >
                   Cancel
@@ -425,12 +473,49 @@ export function Groups() {
                   onClick={handleCreateGroup}
                   disabled={createGroupLoading}
                 >
-                  {createGroupLoading ? "Creating..." : "Create Group"}
+                  {createGroupLoading ? "Saving..." : "Save"}
                 </Button>
               </div>
             </div>
           </div>
         </Dialog>
+
+        {/* Group Details Modal with Chat */}
+        {selectedGroup && (
+          <Dialog open={!!selectedGroup} onOpenChange={handleCloseGroup}>
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+              <div className="bg-card border border-border rounded-xl w-full max-w-2xl p-6 relative">
+                <button
+                  className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+                  onClick={handleCloseGroup}
+                >
+                  ×
+                </button>
+                <h2 className="text-2xl font-bold mb-2">{selectedGroup.name}</h2>
+                <p className="text-muted-foreground mb-2">{selectedGroup.subject}</p>
+                {selectedGroup.bannerUrl && (
+                  <img src={selectedGroup.bannerUrl} alt="Banner" className="mb-4 w-full h-40 object-cover rounded-lg" />
+                )}
+                <p className="mb-4">{selectedGroup.description}</p>
+                <div className="mb-4">
+                  <strong>Invite Code:</strong> {selectedGroup.inviteCode}
+                </div>
+                <div className="mb-4">
+                  <strong>Created:</strong> {new Date(selectedGroup.createdAt).toLocaleString()}
+                </div>
+                <div className="mb-4">
+                  <strong>Owner:</strong> {selectedGroup.ownerId}
+                </div>
+                <div className="mb-4">
+                  <strong>Members:</strong> {selectedGroup.memberIds?.length || 1}
+                </div>
+                <div className="mb-4">
+                  <GroupChat groupId={selectedGroup.id} />
+                </div>
+              </div>
+            </div>
+          </Dialog>
+        )}
       </div>
     </Layout>
   );
