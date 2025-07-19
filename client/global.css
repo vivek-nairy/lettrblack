@@ -1,0 +1,92 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /**
+   * LettrBlack Dark Theme
+   * HSL values for tailwind integration
+   */
+  :root {
+    /* Main dark theme colors */
+    --background: 210 11% 7%; /* #121212 */
+    --foreground: 210 11% 93%; /* Light text */
+
+    --card: 210 11% 11%; /* #1E1E1E */
+    --card-foreground: 210 11% 93%;
+
+    --popover: 210 11% 11%;
+    --popover-foreground: 210 11% 93%;
+
+    /* Purple accent - #705cf6 */
+    --primary: 249 89% 66%; /* #705cf6 */
+    --primary-foreground: 210 11% 93%;
+
+    --secondary: 210 11% 15%; /* Darker gray */
+    --secondary-foreground: 210 11% 93%;
+
+    --muted: 210 11% 13%;
+    --muted-foreground: 210 11% 60%;
+
+    --accent: 249 89% 66%; /* Purple accent */
+    --accent-foreground: 210 11% 93%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 11% 93%;
+
+    --border: 210 11% 20%;
+    --input: 210 11% 15%;
+    --ring: 249 89% 66%; /* Purple ring */
+
+    --radius: 0.75rem; /* More rounded for modern look */
+
+    /* Sidebar colors */
+    --sidebar-background: 210 11% 9%; /* Slightly darker than main bg */
+    --sidebar-foreground: 210 11% 80%;
+    --sidebar-primary: 249 89% 66%;
+    --sidebar-primary-foreground: 210 11% 93%;
+    --sidebar-accent: 210 11% 13%;
+    --sidebar-accent-foreground: 210 11% 80%;
+    --sidebar-border: 210 11% 20%;
+    --sidebar-ring: 249 89% 66%;
+
+    /* LettrBlack specific colors */
+    --lettrblack-purple: 249 89% 66%; /* #705cf6 */
+    --lettrblack-dark-bg: 210 11% 7%; /* #121212 */
+    --lettrblack-card-bg: 210 11% 11%; /* #1E1E1E */
+    --lettrblack-text: 210 11% 93%;
+    --lettrblack-text-muted: 210 11% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .lettrblack-card {
+    @apply bg-card border border-border rounded-xl p-6 shadow-lg;
+  }
+
+  .lettrblack-button {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 transition-colors duration-200 rounded-lg px-4 py-2 font-medium;
+  }
+
+  .lettrblack-sidebar-item {
+    @apply flex items-center gap-3 px-4 py-3 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors duration-200;
+  }
+
+  .lettrblack-xp-bar {
+    @apply w-full bg-secondary rounded-full h-3 overflow-hidden;
+  }
+
+  .lettrblack-xp-fill {
+    @apply h-full bg-gradient-to-r from-primary to-accent transition-all duration-300;
+  }
+}
