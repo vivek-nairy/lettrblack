@@ -415,7 +415,7 @@ export function Groups() {
         </div>
 
         {/* Create Group Modal */}
-        <Dialog open={showCreateModal} onOpenChange={handleCancelCreateGroup}>
+        <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
             <div className="bg-card border border-border rounded-xl w-full max-w-md p-6">
               <h2 className="text-xl font-semibold mb-4">Create a New Group</h2>
@@ -462,7 +462,7 @@ export function Groups() {
               <div className="flex gap-2 mt-6 justify-end">
                 <Button
                   variant="secondary"
-                  onClick={handleCancelCreateGroup}
+                  onClick={() => setShowCreateModal(false)}
                   disabled={createGroupLoading}
                 >
                   Cancel
