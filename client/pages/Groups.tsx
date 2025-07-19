@@ -409,7 +409,10 @@ export function Groups() {
 
         {/* Floating Action Button */}
         <div className="fixed bottom-6 right-6 z-40">
-          <button className="lettrblack-button w-14 h-14 rounded-full shadow-2xl hover:shadow-primary/25 transition-all duration-300 hover:scale-110 flex items-center justify-center">
+          <button
+            className="lettrblack-button w-14 h-14 rounded-full shadow-2xl hover:shadow-primary/25 transition-all duration-300 hover:scale-110 flex items-center justify-center"
+            onClick={() => setShowCreateModal(true)}
+          >
             <Plus className="w-6 h-6" />
           </button>
         </div>
