@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { LogOut, User } from "lucide-react";
+import { LiveChatWidget } from "@/components/LiveChatWidget";
 
 const queryClient = new QueryClient();
 
@@ -126,6 +127,7 @@ const App = () => {
             } />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <LiveChatWidget />
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

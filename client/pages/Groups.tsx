@@ -53,11 +53,6 @@ export function Groups() {
   const [createGroupImageUrl, setCreateGroupImageUrl] = useState("");
   const [selectedGroup, setSelectedGroup] = useState<any>(null);
 
-  // Always reset create modal on mount
-  useEffect(() => {
-    setShowCreateModal(false);
-  }, []);
-
   useEffect(() => {
     if (firebaseUser) {
       getGroupsByUser(firebaseUser.uid).then(setGroups);
@@ -95,7 +90,8 @@ export function Groups() {
       };
       await createGroup(newGroup);
       await addXpToUser(firebaseUser.uid, 50, "create_group", 50);
-      handleCancelCreateGroup();
+      resetCreateGroupForm();
+      setShowCreateModal(false);
       getGroupsByUser(firebaseUser.uid).then(setGroups);
     } catch (err) {
       setCreateGroupError(
@@ -106,8 +102,7 @@ export function Groups() {
     }
   };
 
-  const handleCancelCreateGroup = () => {
-    setShowCreateModal(false);
+  const resetCreateGroupForm = () => {
     setCreateGroupName("");
     setCreateGroupSubject("");
     setCreateGroupDescription("");
@@ -470,7 +465,10 @@ export function Groups() {
               <div className="flex gap-2 mt-6 justify-end">
                 <Button
                   variant="secondary"
-                  onClick={() => setShowCreateModal(false)}
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    resetCreateGroupForm();
+                  }}
                   disabled={createGroupLoading}
                 >
                   Cancel
