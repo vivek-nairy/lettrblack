@@ -20,7 +20,7 @@ export function LiveChatWidget() {
 
   useEffect(() => {
     const q = query(
-      collection(db, `livechat/messages`),
+      collection(db, `livechatMessages`),
       orderBy("timestamp", "asc")
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -39,7 +39,7 @@ export function LiveChatWidget() {
     if (!newMessage.trim()) return;
     setLoading(true);
     try {
-      await addDoc(collection(db, `livechat/messages`), {
+      await addDoc(collection(db, `livechatMessages`), {
         sender: "User", // or "Admin" for admin messages
         text: newMessage.trim(),
         timestamp: serverTimestamp(),
