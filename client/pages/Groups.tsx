@@ -328,35 +328,33 @@ export function Groups() {
                 </div>
 
                 {/* Members */}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex -space-x-2">
-                      {group.avatars.slice(0, 4).map((avatar, index) => (
-                        <img
-                          key={index}
-                          src={avatar}
-                          alt={`Member ${index + 1}`}
-                          className="w-8 h-8 rounded-full border-2 border-background object-cover"
-                        />
-                      ))}
-                      {group.members > 4 && (
-                        <div className="w-8 h-8 rounded-full bg-muted border-2 border-background flex items-center justify-center text-xs font-medium text-foreground">
-                          +{group.members - 4}
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Users className="w-4 h-4" />
-                        {group.members}/{group.maxMembers} members
-                      </span>
-                    </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex -space-x-2">
+                    {(group.avatars || []).slice(0, 4).map((avatar, index) => (
+                      <img
+                        key={index}
+                        src={avatar}
+                        alt={`Member ${index + 1}`}
+                        className="w-8 h-8 rounded-full border-2 border-background object-cover"
+                      />
+                    ))}
+                    {group.members && group.members > 4 && (
+                      <div className="w-8 h-8 rounded-full bg-muted border-2 border-background flex items-center justify-center text-xs font-medium text-foreground">
+                        +{group.members - 4}
+                      </div>
+                    )}
                   </div>
+                  <div className="text-sm text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Users className="w-4 h-4" />
+                      {(group.members || 1)}/{group.maxMembers || 1} members
+                    </span>
+                  </div>
+                </div>
 
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Clock className="w-3 h-3" />
-                    {group.lastActivity}
-                  </div>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Clock className="w-3 h-3" />
+                  {group.lastActivity || "No recent activity"}
                 </div>
 
                 {/* Actions */}
