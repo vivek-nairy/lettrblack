@@ -9,6 +9,8 @@ import { storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useAuthUser } from "../hooks/useAuthUser";
 import { useNavigate } from "react-router-dom";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 const noteTypeIcons = { pdf: FileText, link: Link, text: BookOpen };
 const noteTypeColors = { pdf: "bg-red-500/10 text-red-400", link: "bg-blue-500/10 text-blue-400", text: "bg-green-500/10 text-green-400" };
@@ -96,6 +98,16 @@ export function Profile() {
     }
   };
 
+  // Add this function in the Profile component
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      navigate("/signin");
+    } catch (error) {
+      console.error("Sign out error:", error);
+    }
+  };
+
   // Calculate overall progress percentage
   const totalTasks = userProgress.reduce((sum, p) => sum + p.tasks.length, 0);
   const completedTasks = userProgress.reduce((sum, p) => sum + p.tasks.filter(t => t.completed).length, 0);
@@ -136,6 +148,12 @@ export function Profile() {
               >
                 <Edit3 className="w-4 h-4" />
                 Edit Profile
+              </button>
+              <button
+                onClick={handleSignOut}
+                className="mt-2 px-4 py-2 bg-destructive text-destructive-foreground hover:bg-destructive/80 rounded-lg transition-colors flex items-center gap-2"
+              >
+                Sign Out
               </button>
             </div>
             {/* User Details */}
