@@ -491,26 +491,26 @@ export function Groups() {
                 >
                   ×
                 </button>
-                <h2 className="text-2xl font-bold mb-2">{selectedGroup.name}</h2>
-                <p className="text-muted-foreground mb-2">{selectedGroup.subject}</p>
-                {selectedGroup.bannerUrl && (
+                <h2 className="text-2xl font-bold mb-2">{selectedGroup?.name || "No name"}</h2>
+                <p className="text-muted-foreground mb-2">{selectedGroup?.subject || "No subject"}</p>
+                {selectedGroup?.bannerUrl && (
                   <img src={selectedGroup.bannerUrl} alt="Banner" className="mb-4 w-full h-40 object-cover rounded-lg" />
                 )}
-                <p className="mb-4">{selectedGroup.description}</p>
+                <p className="mb-4">{selectedGroup?.description || "No description"}</p>
                 <div className="mb-4">
-                  <strong>Invite Code:</strong> {selectedGroup.inviteCode}
+                  <strong>Invite Code:</strong> {selectedGroup?.inviteCode || "-"}
                 </div>
                 <div className="mb-4">
-                  <strong>Created:</strong> {new Date(selectedGroup.createdAt).toLocaleString()}
+                  <strong>Created:</strong> {selectedGroup?.createdAt ? new Date(selectedGroup.createdAt).toLocaleString() : "-"}
                 </div>
                 <div className="mb-4">
-                  <strong>Owner:</strong> {selectedGroup.ownerId}
+                  <strong>Owner:</strong> {selectedGroup?.ownerId || "-"}
                 </div>
                 <div className="mb-4">
-                  <strong>Members:</strong> {selectedGroup.memberIds?.length || 1}
+                  <strong>Members:</strong> {selectedGroup?.memberIds?.length || 1}
                 </div>
                 <div className="mb-4">
-                  <GroupChat groupId={selectedGroup.id} />
+                  <GroupChat groupId={selectedGroup?.id || ""} />
                 </div>
               </div>
             </div>
