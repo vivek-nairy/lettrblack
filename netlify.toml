@@ -1,5 +1,5 @@
 [build]
-  command = "npm run build:client"
+  command = "chmod +x build.sh && ./build.sh"
   functions = "netlify/functions"
   publish = "dist/spa"
 

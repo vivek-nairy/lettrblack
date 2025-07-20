@@ -11,6 +11,11 @@ export default defineConfig(({ mode }) => ({
   build: {
     outDir: "dist/spa",
     chunkSizeWarningLimit: 2000,
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
   },
   plugins: [react(), mode === 'serve' ? expressPlugin() : null].filter(Boolean),
   resolve: {
@@ -18,6 +23,9 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./client"),
       "@shared": path.resolve(__dirname, "./shared"),
     },
+  },
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(mode),
   },
 }));
 
