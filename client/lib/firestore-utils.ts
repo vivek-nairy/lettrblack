@@ -155,14 +155,32 @@ export function subscribeToMessages(groupId: string, callback: (messages: any[])
 
 // NOTES
 export async function createNote(note: Partial<Note>) {
-  const noteWithId = {
-    ...note,
-    id: crypto.randomUUID(),
-  } as Note;
+  console.log("📝 createNote called with:", note);
   
-  const ref = doc(db, "notes", noteWithId.id);
-  await setDoc(ref, noteWithId);
-  return noteWithId.id;
+  try {
+    const noteWithId = {
+      ...note,
+      id: crypto.randomUUID(),
+    } as Note;
+    
+    console.log("📝 Note with ID:", noteWithId);
+    
+    const ref = doc(db, "notes", noteWithId.id);
+    console.log("📝 Firestore document reference:", ref.path);
+    
+    await setDoc(ref, noteWithId);
+    console.log("✅ Note successfully saved to Firestore");
+    
+    return noteWithId.id;
+  } catch (error) {
+    console.error("❌ Error in createNote:", error);
+    console.error("❌ Error details:", {
+      message: error.message,
+      code: error.code,
+      stack: error.stack
+    });
+    throw error;
+  }
 }
 export async function getNote(id: string) {
   const snap = await getDoc(doc(db, "notes", id));

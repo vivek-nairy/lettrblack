@@ -37,8 +37,9 @@ import {
 } from "@/lib/firestore-utils";
 import { useAuthUser } from "../hooks/useAuthUser";
 import { useToast } from "@/hooks/use-toast";
-import { storage } from "@/lib/firebase";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { storage, db } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { doc, setDoc, deleteDoc } from "firebase/firestore";
 import { Note } from "@/lib/firestore-structure";
 import { Button } from "@/components/ui/button";
 
@@ -78,6 +79,40 @@ export function Notes() {
   const [userPurchases, setUserPurchases] = useState<string[]>([]);
   const [showAIChatbot, setShowAIChatbot] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Debug function to test Firebase connectivity
+  const testFirebaseConnection = async () => {
+    console.log("🧪 Testing Firebase connection...");
+    try {
+      // Test Firestore
+      const testDoc = doc(db, "test", "connection");
+      await setDoc(testDoc, { timestamp: Date.now() });
+      console.log("✅ Firestore connection successful");
+      
+      // Test Storage
+      const testRef = ref(storage, "test/connection.txt");
+      const testBlob = new Blob(["test"], { type: "text/plain" });
+      await uploadBytes(testRef, testBlob);
+      console.log("✅ Storage connection successful");
+      
+      // Clean up test files
+      await deleteDoc(testDoc);
+      await deleteObject(testRef);
+      console.log("✅ Test cleanup completed");
+      
+      toast({
+        title: "Firebase Connection Test",
+        description: "All Firebase services are working correctly!",
+      });
+    } catch (error) {
+      console.error("❌ Firebase connection test failed:", error);
+      toast({
+        title: "Firebase Connection Test",
+        description: `Connection failed: ${error.message}`,
+        variant: "destructive",
+      });
+    }
+  };
 
   // Load notes and user purchases
   useEffect(() => {
@@ -172,7 +207,10 @@ export function Notes() {
 
   // Upload handler
   const handleUpload = async (noteData: NoteUploadData) => {
+    console.log("🚀 Starting upload process...", { noteData });
+    
     if (!firebaseUser) {
+      console.error("❌ No Firebase user found");
       toast({
         title: "Authentication required",
         description: "Please sign in to upload notes.",
@@ -181,6 +219,8 @@ export function Notes() {
       return;
     }
 
+    console.log("✅ User authenticated:", firebaseUser.uid);
+
     setIsUploading(true);
     try {
       let fileUrl = "";
@@ -188,18 +228,30 @@ export function Notes() {
 
       // Upload main file
       if (noteData.file) {
+        console.log("📁 Uploading main file:", noteData.file.name, noteData.file.size);
         const fileName = `${firebaseUser.uid}_${Date.now()}_${noteData.file.name}`;
         const fileRef = ref(storage, `notes/${fileName}`);
-        await uploadBytes(fileRef, noteData.file);
+        
+        console.log("📤 Starting file upload to Firebase Storage...");
+        const uploadResult = await uploadBytes(fileRef, noteData.file);
+        console.log("✅ File upload completed:", uploadResult);
+        
+        console.log("🔗 Getting download URL...");
         fileUrl = await getDownloadURL(fileRef);
+        console.log("✅ File URL obtained:", fileUrl);
+      } else {
+        console.error("❌ No file provided for upload");
+        throw new Error("No file provided for upload");
       }
 
       // Upload cover image
       if (noteData.coverImage) {
+        console.log("🖼️ Uploading cover image:", noteData.coverImage.name);
         const imageName = `${firebaseUser.uid}_${Date.now()}_cover_${noteData.coverImage.name}`;
         const imageRef = ref(storage, `covers/${imageName}`);
         await uploadBytes(imageRef, noteData.coverImage);
         coverImageUrl = await getDownloadURL(imageRef);
+        console.log("✅ Cover image uploaded:", coverImageUrl);
       }
 
       // Create note object
@@ -226,7 +278,10 @@ export function Notes() {
         updatedAt: Date.now(),
       };
 
-      await createNote(note);
+      console.log("📝 Creating note in Firestore:", note);
+
+      const noteId = await createNote(note);
+      console.log("✅ Note created successfully with ID:", noteId);
 
       toast({
         title: "Note uploaded successfully!",
@@ -235,17 +290,39 @@ export function Notes() {
           : "Your note has been uploaded to your groups.",
       });
 
+      console.log("🎉 Upload process completed successfully!");
       // Don't close modal here - let the modal handle it
     } catch (error) {
-      console.error("Upload error:", error);
+      console.error("❌ Upload error:", error);
+      console.error("❌ Error details:", {
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
+      
+      let errorMessage = "There was an error uploading your note. Please try again.";
+      
+      // Provide more specific error messages
+      if (error.code === 'storage/unauthorized') {
+        errorMessage = "Upload failed: You don't have permission to upload files.";
+      } else if (error.code === 'storage/quota-exceeded') {
+        errorMessage = "Upload failed: Storage quota exceeded.";
+      } else if (error.code === 'storage/retry-limit-exceeded') {
+        errorMessage = "Upload failed: Network error. Please check your connection and try again.";
+      } else if (error.message) {
+        errorMessage = `Upload failed: ${error.message}`;
+      }
+      
       toast({
         title: "Upload failed",
-        description: "There was an error uploading your note. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
+      
       // Re-throw error so modal can handle it
       throw error;
     } finally {
+      console.log("🏁 Upload process finished, setting isUploading to false");
       setIsUploading(false);
     }
   };
@@ -360,6 +437,15 @@ export function Notes() {
               <Sparkles className="w-4 h-4" />
               AI Assistant
             </Button>
+            {firebaseUser && (
+              <Button
+                onClick={testFirebaseConnection}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                🧪 Test Firebase
+              </Button>
+            )}
           </div>
         </div>
 
