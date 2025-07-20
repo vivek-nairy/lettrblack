@@ -51,6 +51,7 @@ export function VideoCallModal({
   useEffect(() => {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
+      console.log('[VideoCallModal] Set local video stream', localStream);
     }
   }, [localStream]);
 
@@ -124,14 +125,20 @@ export function VideoCallModal({
         >
           {/* Local Video */}
           <div className="relative bg-gray-900 rounded-lg overflow-hidden">
-            <video
-              ref={localVideoRef}
-              autoPlay
-              muted
-              playsInline
-              className="w-full h-full object-cover"
-            />
-            {isVideoOff && (
+            {localStream ? (
+              <video
+                ref={localVideoRef}
+                autoPlay
+                muted
+                playsInline
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-white">
+                <p className="text-center">Camera not available</p>
+              </div>
+            )}
+            {isVideoOff && localStream && (
               <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
                 <div className="text-center text-white">
                   <VideoOff className="w-12 h-12 mx-auto mb-2 opacity-50" />
