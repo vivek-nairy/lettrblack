@@ -32,7 +32,7 @@ import { VideoCallModal } from "../components/VideoCallModal";
 import { subscribeToCallEvents } from "../lib/firestore-utils";
 import { useNotifications } from "../hooks/useNotifications";
 import { useToast } from "../hooks/use-toast";
-import { ToastAction } from "../components/ui/toast";
+import { ToastAction } from '@/components/ui/toast';
 
 export function Chat() {
   const { groupId } = useParams<{ groupId: string }>();
