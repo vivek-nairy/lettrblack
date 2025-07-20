@@ -226,32 +226,45 @@ export function Notes() {
       let fileUrl = "";
       let coverImageUrl = "";
 
-      // Upload main file
+      // Upload main file - temporary workaround for CORS
       if (noteData.file) {
         console.log("📁 Uploading main file:", noteData.file.name, noteData.file.size);
-        const fileName = `${firebaseUser.uid}_${Date.now()}_${noteData.file.name}`;
-        const fileRef = ref(storage, `notes/${fileName}`);
         
-        console.log("📤 Starting file upload to Firebase Storage...");
-        const uploadResult = await uploadBytes(fileRef, noteData.file);
-        console.log("✅ File upload completed:", uploadResult);
+        // For now, let's create a temporary file URL using FileReader
+        // This is a temporary solution until CORS is fixed
+        const tempFileUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(noteData.file);
+        });
         
-        console.log("🔗 Getting download URL...");
-        fileUrl = await getDownloadURL(fileRef);
-        console.log("✅ File URL obtained:", fileUrl);
+        console.log("✅ Temporary file URL created:", tempFileUrl);
+        
+        // Store the file data in Firestore for now
+        // In production, this should be uploaded to Firebase Storage
+        fileUrl = tempFileUrl as string;
+        
+        console.warn("⚠️ Using temporary file storage. Please configure Firebase Storage CORS for production.");
       } else {
         console.error("❌ No file provided for upload");
         throw new Error("No file provided for upload");
       }
 
-      // Upload cover image
+      // Upload cover image - temporary workaround for CORS
       if (noteData.coverImage) {
         console.log("🖼️ Uploading cover image:", noteData.coverImage.name);
-        const imageName = `${firebaseUser.uid}_${Date.now()}_cover_${noteData.coverImage.name}`;
-        const imageRef = ref(storage, `covers/${imageName}`);
-        await uploadBytes(imageRef, noteData.coverImage);
-        coverImageUrl = await getDownloadURL(imageRef);
-        console.log("✅ Cover image uploaded:", coverImageUrl);
+        
+        // Create temporary image URL
+        const tempImageUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(noteData.coverImage);
+        });
+        
+        coverImageUrl = tempImageUrl as string;
+        console.log("✅ Temporary cover image URL created:", coverImageUrl);
       }
 
       // Create note object
