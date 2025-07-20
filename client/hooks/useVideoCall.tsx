@@ -540,12 +540,6 @@ export function useVideoCall(groupId: string, groupName?: string) {
   const endCall = useCallback(async () => {
     if (!firebaseUser) return;
 
-    // Prevent multiple end calls
-    if (!state.isInCall && !state.isConnecting) {
-      console.log('🚫 No call in progress, ignoring end request');
-      return;
-    }
-
     console.log('🔚 Ending video call...');
 
     // Stop local stream
@@ -572,22 +566,8 @@ export function useVideoCall(groupId: string, groupName?: string) {
     // Leave video call
     await leaveVideoCall(groupId, firebaseUser.uid);
 
-    // Cleanup if no participants left
-    const videoCall = await getVideoCall(groupId);
-    if (videoCall && videoCall.participants.filter(p => p.isConnected).length === 0) {
-      await cleanupVideoCall(groupId);
-      
-      // End call and send notification
-      await endCall(groupId);
-      if (groupName && firebaseUser) {
-        await sendCallEndedNotification(
-          groupId,
-          firebaseUser.uid,
-          firebaseUser.displayName || 'Anonymous',
-          groupName
-        );
-      }
-    }
+    // (Removed: auto-cleanup if no participants left)
+    // Only clean up call when user explicitly ends it
 
     // Unsubscribe
     if (unsubscribeSignals.current) {
@@ -611,7 +591,7 @@ export function useVideoCall(groupId: string, groupName?: string) {
       connectionStatus: new Map(),
       connectionTimeouts: new Map(),
     });
-  }, [groupId, firebaseUser, groupName, clearConnectionTimeout, state.isInCall, state.isConnecting]);
+  }, [groupId, firebaseUser, clearConnectionTimeout]);
 
   // Toggle mute
   const toggleMute = useCallback(() => {
