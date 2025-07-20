@@ -172,7 +172,14 @@ export function Notes() {
 
   // Upload handler
   const handleUpload = async (noteData: NoteUploadData) => {
-    if (!firebaseUser) return;
+    if (!firebaseUser) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to upload notes.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsUploading(true);
     try {
@@ -228,7 +235,7 @@ export function Notes() {
           : "Your note has been uploaded to your groups.",
       });
 
-      setShowUploadModal(false);
+      // Don't close modal here - let the modal handle it
     } catch (error) {
       console.error("Upload error:", error);
       toast({
@@ -236,6 +243,8 @@ export function Notes() {
         description: "There was an error uploading your note. Please try again.",
         variant: "destructive",
       });
+      // Re-throw error so modal can handle it
+      throw error;
     } finally {
       setIsUploading(false);
     }

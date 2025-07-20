@@ -120,8 +120,25 @@ export function NoteUploadModal({ isOpen, onClose, onSubmit, isUploading }: Note
       newErrors.file = "File size must be under 50MB";
     }
 
+    // Validate file type
+    if (formData.file) {
+      const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword', 'text/plain', 'image/jpeg', 'image/png'];
+      if (!validTypes.includes(formData.file.type)) {
+        newErrors.file = "Please select a valid file type (PDF, DOCX, DOC, TXT, JPG, PNG)";
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  // Check if form is valid for enabling submit button
+  const isFormValid = () => {
+    return formData.title.trim() && 
+           formData.subject && 
+           formData.file && 
+           formData.price >= 0 &&
+           Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async () => {
@@ -142,13 +159,16 @@ export function NoteUploadModal({ isOpen, onClose, onSubmit, isUploading }: Note
       });
       setTagInput("");
       setErrors({});
+      // Close modal on success
+      onClose();
     } catch (error) {
       console.error("Upload failed:", error);
+      // Don't close modal on error, let user try again
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && e.target === tagInput) {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
       e.preventDefault();
       handleAddTag();
     }
@@ -170,7 +190,6 @@ export function NoteUploadModal({ isOpen, onClose, onSubmit, isUploading }: Note
               variant="ghost"
               size="sm"
               onClick={onClose}
-              disabled={isUploading}
             >
               <X className="w-5 h-5" />
             </Button>
@@ -440,7 +459,7 @@ export function NoteUploadModal({ isOpen, onClose, onSubmit, isUploading }: Note
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={isUploading}
+                disabled={isUploading || !isFormValid()}
                 className="flex-1"
               >
                 {isUploading ? (
