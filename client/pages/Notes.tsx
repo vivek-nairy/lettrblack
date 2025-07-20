@@ -37,8 +37,7 @@ import {
 } from "@/lib/firestore-utils";
 import { useAuthUser } from "../hooks/useAuthUser";
 import { useToast } from "@/hooks/use-toast";
-import { storage, db } from "@/lib/firebase";
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { db } from "@/lib/firebase";
 import { doc, setDoc, deleteDoc } from "firebase/firestore";
 import { Note } from "@/lib/firestore-structure";
 import { Button } from "@/components/ui/button";
@@ -89,20 +88,13 @@ export function Notes() {
       await setDoc(testDoc, { timestamp: Date.now() });
       console.log("✅ Firestore connection successful");
       
-      // Test Storage
-      const testRef = ref(storage, "test/connection.txt");
-      const testBlob = new Blob(["test"], { type: "text/plain" });
-      await uploadBytes(testRef, testBlob);
-      console.log("✅ Storage connection successful");
-      
       // Clean up test files
       await deleteDoc(testDoc);
-      await deleteObject(testRef);
       console.log("✅ Test cleanup completed");
       
       toast({
         title: "Firebase Connection Test",
-        description: "All Firebase services are working correctly!",
+        description: "Firestore is working correctly!",
       });
     } catch (error) {
       console.error("❌ Firebase connection test failed:", error);
