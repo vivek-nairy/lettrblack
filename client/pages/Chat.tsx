@@ -83,14 +83,6 @@ export function Chat() {
         toast({
           title: "Incoming Group Call",
           description: `${callEvent.startedByName} started a call in ${callEvent.groupName}`,
-          action: (
-            <ToastAction altText="Join Call" onClick={() => {
-              setShowVideoCall(true);
-              videoCall.startCall();
-            }}>
-              Join
-            </ToastAction>
-          )
         });
       }
     });
@@ -105,6 +97,10 @@ export function Chat() {
     // Auto-scroll to bottom when new messages arrive
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    console.log('[VideoCall State]', videoCall);
+  }, [videoCall]);
 
   const handleSendMessage = async () => {
     if (!firebaseUser || !groupId || (!newMessage.trim() && !selectedFile)) return;
