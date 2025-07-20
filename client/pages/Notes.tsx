@@ -297,16 +297,47 @@ export function Notes() {
       // Upload cover image to Firebase Storage
       if (noteData.coverImage) {
         console.log("🖼️ Uploading cover image:", noteData.coverImage.name);
+        console.log("📏 Cover image size:", noteData.coverImage.size, "bytes");
         
         try {
           const imageName = `${firebaseUser.uid}_${Date.now()}_cover_${noteData.coverImage.name}`;
           const imageRef = ref(storage, `covers/${imageName}`);
-          await uploadBytes(imageRef, noteData.coverImage);
+          
+          // Add timeout for cover image upload too
+          const uploadPromise = uploadBytes(imageRef, noteData.coverImage);
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("Cover upload timeout - CORS likely blocked")), 5000)
+          );
+          
+          await Promise.race([uploadPromise, timeoutPromise]);
           coverImageUrl = await getDownloadURL(imageRef);
           console.log("✅ Cover image uploaded to Firebase Storage:", coverImageUrl);
         } catch (storageError) {
-          console.warn("⚠️ Cover image upload failed, continuing without cover:", storageError);
-          // Continue without cover image
+          console.warn("⚠️ Cover image upload failed, falling back to data URL:", storageError);
+          
+          // Fallback to data URL for small cover images
+          if (noteData.coverImage.size < 500000) { // Only for images under 500KB
+            console.log("🔄 Creating fallback cover image data URL...");
+            const tempImageUrl = await new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => {
+                console.log("✅ Cover image FileReader completed");
+                resolve(reader.result);
+              };
+              reader.onerror = (error) => {
+                console.error("❌ Cover image FileReader error:", error);
+                reject(error);
+              };
+              reader.readAsDataURL(noteData.coverImage);
+            });
+            
+            coverImageUrl = tempImageUrl as string;
+            console.log("✅ Fallback cover image data URL created");
+            console.log("🔗 Cover image data URL length:", coverImageUrl.length);
+          } else {
+            console.warn("⚠️ Cover image too large for fallback, continuing without cover");
+            // Continue without cover image
+          }
         }
       }
 
