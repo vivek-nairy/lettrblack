@@ -295,34 +295,72 @@ export async function purchaseNote(noteId: string, buyerId: string, amount: numb
 }
 
 export async function getUserPurchases(userId: string) {
-  const q = query(
-    collection(db, "purchases"), 
-    where("buyerId", "==", userId),
-    orderBy("createdAt", "desc")
-  );
-  const snap = await getDocs(q);
-  return snap.docs.map(d => d.data());
+  try {
+    const q = query(
+      collection(db, "purchases"), 
+      where("buyerId", "==", userId),
+      orderBy("createdAt", "desc")
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map(d => d.data());
+  } catch (error) {
+    console.error("❌ Purchases index not ready, using simple query:", error);
+    // Fallback to simple query without orderBy
+    const fallbackQuery = query(
+      collection(db, "purchases"), 
+      where("buyerId", "==", userId)
+    );
+    const snap = await getDocs(fallbackQuery);
+    const purchases = snap.docs.map(d => d.data());
+    // Sort in memory
+    purchases.sort((a, b) => b.createdAt - a.createdAt);
+    return purchases;
+  }
 }
 
 // Real-time listeners for marketplace
 export function subscribeToPublicNotes(callback: (notes: Note[]) => void) {
   console.log("🔍 Setting up subscription to public notes...");
-  const q = query(
-    collection(db, "notes"), 
-    where("isPublic", "==", true),
-    orderBy("createdAt", "desc")
-  );
-  return onSnapshot(q, (snapshot) => {
-    console.log("📝 Firestore snapshot received:", snapshot.docs.length, "documents");
-    const notes = snapshot.docs.map(d => {
-      const data = d.data() as Note;
-      console.log("📝 Note data:", { id: d.id, title: data.title, isPublic: data.isPublic });
-      return data;
+  
+  // Try composite index first, fallback to simple query if index not ready
+  const tryCompositeQuery = () => {
+    const q = query(
+      collection(db, "notes"), 
+      where("isPublic", "==", true),
+      orderBy("createdAt", "desc")
+    );
+    return onSnapshot(q, (snapshot) => {
+      console.log("📝 Firestore snapshot received:", snapshot.docs.length, "documents");
+      const notes = snapshot.docs.map(d => {
+        const data = d.data() as Note;
+        console.log("📝 Note data:", { id: d.id, title: data.title, isPublic: data.isPublic });
+        return data;
+      });
+      callback(notes);
+    }, (error) => {
+      console.error("❌ Composite index not ready, falling back to simple query:", error);
+      // Fallback to simple query without orderBy
+      const fallbackQuery = query(
+        collection(db, "notes"), 
+        where("isPublic", "==", true)
+      );
+      return onSnapshot(fallbackQuery, (snapshot) => {
+        console.log("📝 Fallback query received:", snapshot.docs.length, "documents");
+        const notes = snapshot.docs.map(d => {
+          const data = d.data() as Note;
+          console.log("📝 Note data:", { id: d.id, title: data.title, isPublic: data.isPublic });
+          return data;
+        });
+        // Sort in memory
+        notes.sort((a, b) => b.createdAt - a.createdAt);
+        callback(notes);
+      }, (fallbackError) => {
+        console.error("❌ Fallback query also failed:", fallbackError);
+      });
     });
-    callback(notes);
-  }, (error) => {
-    console.error("❌ Error in subscribeToPublicNotes:", error);
-  });
+  };
+  
+  return tryCompositeQuery();
 }
 
 // PROGRESS
