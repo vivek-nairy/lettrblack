@@ -30,7 +30,6 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "^4.41.0",
     "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",

@@ -37,8 +37,9 @@ import {
 } from "@/lib/firestore-utils";
 import { useAuthUser } from "../hooks/useAuthUser";
 import { useToast } from "@/hooks/use-toast";
-import { db } from "@/lib/firebase";
+import { db, storage } from "@/lib/firebase";
 import { doc, setDoc, deleteDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Note } from "@/lib/firestore-structure";
 import { Button } from "@/components/ui/button";
 
@@ -218,45 +219,64 @@ export function Notes() {
       let fileUrl = "";
       let coverImageUrl = "";
 
-      // Upload main file - temporary workaround for CORS
+      // Upload main file to Firebase Storage
       if (noteData.file) {
         console.log("📁 Uploading main file:", noteData.file.name, noteData.file.size);
         
-        // For now, let's create a temporary file URL using FileReader
-        // This is a temporary solution until CORS is fixed
-        const tempFileUrl = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = reject;
-          reader.readAsDataURL(noteData.file);
-        });
+        // Check file size (max 10MB for Firebase Storage)
+        if (noteData.file.size > 10 * 1024 * 1024) {
+          throw new Error("File size too large. Maximum size is 10MB.");
+        }
         
-        console.log("✅ Temporary file URL created:", tempFileUrl);
-        
-        // Store the file data in Firestore for now
-        // In production, this should be uploaded to Firebase Storage
-        fileUrl = tempFileUrl as string;
-        
-        console.warn("⚠️ Using temporary file storage. Please configure Firebase Storage CORS for production.");
+        try {
+          // Upload to Firebase Storage
+          const fileName = `${firebaseUser.uid}_${Date.now()}_${noteData.file.name}`;
+          const fileRef = ref(storage, `notes/${fileName}`);
+          
+          console.log("📤 Starting file upload to Firebase Storage...");
+          const uploadResult = await uploadBytes(fileRef, noteData.file);
+          console.log("✅ File upload completed:", uploadResult);
+          
+          console.log("🔗 Getting download URL...");
+          fileUrl = await getDownloadURL(fileRef);
+          console.log("✅ File URL obtained:", fileUrl);
+        } catch (storageError) {
+          console.warn("⚠️ Firebase Storage upload failed, falling back to data URL:", storageError);
+          
+          // Fallback to data URL for small files
+          if (noteData.file.size < 500000) { // Only for files under 500KB
+            const tempFileUrl = await new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result);
+              reader.onerror = reject;
+              reader.readAsDataURL(noteData.file);
+            });
+            
+            fileUrl = tempFileUrl as string;
+            console.log("✅ Fallback data URL created for small file");
+          } else {
+            throw new Error("File too large for fallback storage. Please try a smaller file or configure Firebase Storage CORS.");
+          }
+        }
       } else {
         console.error("❌ No file provided for upload");
         throw new Error("No file provided for upload");
       }
 
-      // Upload cover image - temporary workaround for CORS
+      // Upload cover image to Firebase Storage
       if (noteData.coverImage) {
         console.log("🖼️ Uploading cover image:", noteData.coverImage.name);
         
-        // Create temporary image URL
-        const tempImageUrl = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = reject;
-          reader.readAsDataURL(noteData.coverImage);
-        });
-        
-        coverImageUrl = tempImageUrl as string;
-        console.log("✅ Temporary cover image URL created:", coverImageUrl);
+        try {
+          const imageName = `${firebaseUser.uid}_${Date.now()}_cover_${noteData.coverImage.name}`;
+          const imageRef = ref(storage, `covers/${imageName}`);
+          await uploadBytes(imageRef, noteData.coverImage);
+          coverImageUrl = await getDownloadURL(imageRef);
+          console.log("✅ Cover image uploaded to Firebase Storage:", coverImageUrl);
+        } catch (storageError) {
+          console.warn("⚠️ Cover image upload failed, continuing without cover:", storageError);
+          // Continue without cover image
+        }
       }
 
       // Create note object
