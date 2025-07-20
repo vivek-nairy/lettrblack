@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { GroupChat } from "@/components/GroupChat";
+
 
 const categories = ["All", "Programming", "Math", "Language", "Science"];
 const sortOptions = [
@@ -71,7 +71,6 @@ export function Groups() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [sortBy, setSortBy] = useState("Recent Activity");
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState<any>(null);
   const [modal, dispatchModal] = useReducer(modalReducer, initialModalState);
 
   useEffect(() => {
@@ -168,14 +167,7 @@ export function Groups() {
     return Math.min((current / next) * 100, 100);
   };
 
-  // Add handler to open group details
-  const handleOpenGroup = (group: any) => {
-    setSelectedGroup(group);
-  };
-  // Add handler to close group details
-  const handleCloseGroup = () => {
-    setSelectedGroup(null);
-  };
+
 
   // Add handler to join group
   const handleJoinGroup = async (group: any) => {
@@ -305,9 +297,8 @@ export function Groups() {
                 className={cn(
                   "group relative bg-gradient-to-br",
                   group.color,
-                  "border border-border rounded-xl p-6 hover:scale-[1.02] transition-all duration-300 cursor-pointer backdrop-blur-sm",
+                  "border border-border rounded-xl p-6 hover:scale-[1.02] transition-all duration-300 backdrop-blur-sm",
                 )}
-                onClick={() => handleOpenGroup(group)}
               >
                 {/* Active Indicator */}
                 {group.isActive && (
@@ -412,7 +403,7 @@ export function Groups() {
                 <div className="flex gap-3">
                   {group.memberIds?.includes(firebaseUser?.uid) ? (
                     <button
-                      onClick={() => handleOpenGroup(group)}
+                      onClick={() => navigate(`/chat/${group.id}`)}
                       className="flex-1 lettrblack-button flex items-center justify-center gap-2"
                     >
                       <Play className="w-4 h-4" />
@@ -573,41 +564,7 @@ export function Groups() {
           </div>
         )}
 
-        {/* Group Details Modal with Chat */}
-        {selectedGroup && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-card border border-border rounded-xl w-full max-w-4xl h-[80vh] flex flex-col">
-              <div className="p-6 border-b border-border">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-semibold">
-                      {selectedGroup?.name?.charAt(0).toUpperCase() || "G"}
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-bold">{selectedGroup?.name || "No name"}</h2>
-                      <p className="text-muted-foreground">{selectedGroup?.subject || "No subject"}</p>
-                    </div>
-                  </div>
-                  <button
-                    className="text-muted-foreground hover:text-foreground p-2"
-                    onClick={handleCloseGroup}
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-              
-              <div className="flex-1 p-6">
-                <GroupChat 
-                  groupId={selectedGroup?.id || ""} 
-                  groupName={selectedGroup?.name}
-                  groupImage={selectedGroup?.bannerUrl}
-                  onClose={handleCloseGroup}
-                />
-              </div>
-            </div>
-          </div>
-        )}
+
       </div>
     </Layout>
   );

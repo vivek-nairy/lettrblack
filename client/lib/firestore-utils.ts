@@ -62,6 +62,15 @@ export async function getGroup(id: string) {
 export async function updateGroup(id: string, data: Partial<Group>) {
   await updateDoc(doc(db, "groups", id), data);
 }
+
+// Remove user from group
+export async function removeUserFromGroup(groupId: string, userId: string) {
+  const group = await getGroup(groupId);
+  if (!group) return;
+  
+  const updatedMemberIds = group.memberIds.filter(id => id !== userId);
+  await updateDoc(doc(db, "groups", groupId), { memberIds: updatedMemberIds });
+}
 export async function deleteGroup(id: string) {
   await deleteDoc(doc(db, "groups", id));
 }
