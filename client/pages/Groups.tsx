@@ -13,13 +13,13 @@ import {
   Calendar,
   Settings,
   Star,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getGroupsByUser, createGroup } from "@/lib/firestore-utils";
 import { addXpToUser } from "@/lib/firestore-utils";
 import { useAuthUser } from "../hooks/useAuthUser";
 import { useNavigate } from "react-router-dom";
-import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { storage } from "@/lib/firebase";
@@ -86,6 +86,7 @@ export function Groups() {
   }, [modal.open]);
 
   const handleCreateGroup = async () => {
+    console.log("[handleCreateGroup] called");
     dispatchModal({ type: "SET_ERROR", error: "" });
     if (!firebaseUser) {
       dispatchModal({ type: "SET_ERROR", error: "You must be signed in to create a group." });
@@ -123,6 +124,16 @@ export function Groups() {
     } finally {
       dispatchModal({ type: "SET_LOADING", loading: false });
     }
+  };
+
+  const handleCancel = () => {
+    console.log("[handleCancel] called");
+    dispatchModal({ type: "CLOSE" });
+  };
+
+  const handleOpenModal = () => {
+    console.log("[handleOpenModal] called");
+    dispatchModal({ type: "OPEN" });
   };
 
   const filteredGroups = groups
@@ -176,7 +187,7 @@ export function Groups() {
 
           <div className="flex items-center gap-3">
             <button
-              onClick={() => dispatchModal({ type: "OPEN" })}
+              onClick={handleOpenModal}
               className="lettrblack-button flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
@@ -404,7 +415,7 @@ export function Groups() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
-                onClick={() => dispatchModal({ type: "OPEN" })}
+                onClick={handleOpenModal}
                 className="lettrblack-button flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
@@ -424,20 +435,22 @@ export function Groups() {
         <div className="fixed bottom-6 right-6 z-40">
           <button
             className="lettrblack-button w-14 h-14 rounded-full shadow-2xl hover:shadow-primary/25 transition-all duration-300 hover:scale-110 flex items-center justify-center"
-            onClick={() => dispatchModal({ type: "OPEN" })}
+            onClick={handleOpenModal}
           >
             <Plus className="w-6 h-6" />
           </button>
         </div>
 
         {/* Create Group Modal */}
-        <Dialog open={modal.open} onOpenChange={open => {
-          console.log("[Dialog onOpenChange] open:", open);
-          dispatchModal({ type: open ? "OPEN" : "CLOSE" });
-        }}>
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+        {modal.open && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center transition-all duration-200">
             <div className="bg-card border border-border rounded-xl w-full max-w-md p-6">
-              <h2 className="text-xl font-semibold mb-4">Create a New Group</h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Create a New Group</h2>
+                <button onClick={handleCancel} className="text-muted-foreground hover:text-foreground">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
               {modal.error && (
                 <div className="mb-3 text-destructive text-sm">{modal.error}</div>
               )}
@@ -481,7 +494,7 @@ export function Groups() {
               <div className="flex gap-2 mt-6 justify-end">
                 <Button
                   variant="secondary"
-                  onClick={() => dispatchModal({ type: "CLOSE" })}
+                  onClick={handleCancel}
                   disabled={modal.loading}
                 >
                   Cancel
@@ -495,43 +508,41 @@ export function Groups() {
               </div>
             </div>
           </div>
-        </Dialog>
+        )}
 
         {/* Group Details Modal with Chat */}
         {selectedGroup && (
-          <Dialog open={!!selectedGroup} onOpenChange={handleCloseGroup}>
-            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-              <div className="bg-card border border-border rounded-xl w-full max-w-2xl p-6 relative">
-                <button
-                  className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
-                  onClick={handleCloseGroup}
-                >
-                  ×
-                </button>
-                <h2 className="text-2xl font-bold mb-2">{selectedGroup?.name || "No name"}</h2>
-                <p className="text-muted-foreground mb-2">{selectedGroup?.subject || "No subject"}</p>
-                {selectedGroup?.bannerUrl && (
-                  <img src={selectedGroup.bannerUrl} alt="Banner" className="mb-4 w-full h-40 object-cover rounded-lg" />
-                )}
-                <p className="mb-4">{selectedGroup?.description || "No description"}</p>
-                <div className="mb-4">
-                  <strong>Invite Code:</strong> {selectedGroup?.inviteCode || "-"}
-                </div>
-                <div className="mb-4">
-                  <strong>Created:</strong> {selectedGroup?.createdAt ? new Date(selectedGroup.createdAt).toLocaleString() : "-"}
-                </div>
-                <div className="mb-4">
-                  <strong>Owner:</strong> {selectedGroup?.ownerId || "-"}
-                </div>
-                <div className="mb-4">
-                  <strong>Members:</strong> {selectedGroup?.memberIds?.length || 1}
-                </div>
-                <div className="mb-4">
-                  <GroupChat groupId={selectedGroup?.id || ""} />
-                </div>
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+            <div className="bg-card border border-border rounded-xl w-full max-w-2xl p-6 relative">
+              <button
+                className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+                onClick={handleCloseGroup}
+              >
+                ×
+              </button>
+              <h2 className="text-2xl font-bold mb-2">{selectedGroup?.name || "No name"}</h2>
+              <p className="text-muted-foreground mb-2">{selectedGroup?.subject || "No subject"}</p>
+              {selectedGroup?.bannerUrl && (
+                <img src={selectedGroup.bannerUrl} alt="Banner" className="mb-4 w-full h-40 object-cover rounded-lg" />
+              )}
+              <p className="mb-4">{selectedGroup?.description || "No description"}</p>
+              <div className="mb-4">
+                <strong>Invite Code:</strong> {selectedGroup?.inviteCode || "-"}
+              </div>
+              <div className="mb-4">
+                <strong>Created:</strong> {selectedGroup?.createdAt ? new Date(selectedGroup.createdAt).toLocaleString() : "-"}
+              </div>
+              <div className="mb-4">
+                <strong>Owner:</strong> {selectedGroup?.ownerId || "-"}
+              </div>
+              <div className="mb-4">
+                <strong>Members:</strong> {selectedGroup?.memberIds?.length || 1}
+              </div>
+              <div className="mb-4">
+                <GroupChat groupId={selectedGroup?.id || ""} />
               </div>
             </div>
-          </Dialog>
+          </div>
         )}
       </div>
     </Layout>
