@@ -1,7 +1,6 @@
 import { defineConfig, Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
-import { createServer } from "./server";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -13,7 +12,7 @@ export default defineConfig(({ mode }) => ({
     outDir: "dist/spa",
     chunkSizeWarningLimit: 2000,
   },
-  plugins: [react(), expressPlugin()],
+  plugins: [react(), mode === 'serve' ? expressPlugin() : null].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./client"),
@@ -27,10 +26,11 @@ function expressPlugin(): Plugin {
     name: "express-plugin",
     apply: "serve", // Only apply during development (serve mode)
     configureServer(server) {
-      const app = createServer();
-
-      // Add Express app as middleware to Vite dev server
-      server.middlewares.use(app);
+      // Dynamic import to avoid issues during build
+      import("./server").then(({ createServer }) => {
+        const app = createServer();
+        server.middlewares.use(app);
+      }).catch(console.error);
     },
   };
 }
