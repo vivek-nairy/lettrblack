@@ -32,6 +32,7 @@ import { VideoCallModal } from "../components/VideoCallModal";
 import { subscribeToCallEvents } from "../lib/firestore-utils";
 import { useNotifications } from "../hooks/useNotifications";
 import { useToast } from "../hooks/use-toast";
+import { ToastAction } from "../components/ui/toast";
 
 export function Chat() {
   const { groupId } = useParams<{ groupId: string }>();
@@ -83,15 +84,12 @@ export function Chat() {
           title: "Incoming Group Call",
           description: `${callEvent.startedByName} started a call in ${callEvent.groupName}`,
           action: (
-            <button
-              onClick={() => {
-                setShowVideoCall(true);
-                videoCall.startCall();
-              }}
-              className="inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium ring-offset-background transition-colors hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-            >
+            <ToastAction altText="Join Call" onClick={() => {
+              setShowVideoCall(true);
+              videoCall.startCall();
+            }}>
               Join
-            </button>
+            </ToastAction>
           )
         });
       }
@@ -555,7 +553,7 @@ export function Chat() {
         isOpen={showVideoCall}
         onClose={() => {
           setShowVideoCall(false);
-          videoCall.endCall();
+          // Do NOT call videoCall.endCall() here
         }}
         localStream={videoCall.localStream}
         remoteStreams={videoCall.remoteStreams}
