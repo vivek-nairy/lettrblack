@@ -113,4 +113,32 @@ export interface AdminLog {
   targetId: string;
   message: string;
   createdAt: number;
+}
+
+// VIDEO CALLS
+export interface VideoCall {
+  groupId: string;
+  roomId: string;
+  participants: VideoCallParticipant[];
+  isActive: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface VideoCallParticipant {
+  userId: string;
+  userName: string;
+  isConnected: boolean;
+  joinedAt: number;
+  leftAt?: number;
+}
+
+export interface VideoCallSignal {
+  id: string;
+  groupId: string;
+  fromUserId: string;
+  toUserId?: string; // undefined for broadcast signals
+  type: 'offer' | 'answer' | 'ice-candidate' | 'join' | 'leave';
+  data: any;
+  timestamp: number;
 } 

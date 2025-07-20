@@ -17,7 +17,7 @@ import {
   increment,
   arrayUnion
 } from "firebase/firestore";
-import type { User, Group, Note, Progress, Product, AdminLog } from "./firestore-structure";
+import type { User, Group, Note, Progress, Product, AdminLog, VideoCall, VideoCallSignal } from "./firestore-structure";
 
 // USERS
 export async function createUser(user: User) {
@@ -506,4 +506,103 @@ export async function canEarnXp(uid: string, action: string, dailyCap: number): 
   if (!logSnap.exists()) return true;
   const xpLog = logSnap.data();
   return (xpLog[action] || 0) < dailyCap;
+} 
+
+// VIDEO CALL UTILITIES
+export async function createVideoCall(groupId: string, roomId: string) {
+  const videoCall: VideoCall = {
+    groupId,
+    roomId,
+    participants: [],
+    isActive: true,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  };
+  
+  await setDoc(doc(db, "videoCalls", groupId), videoCall);
+  return videoCall;
+}
+
+export async function getVideoCall(groupId: string) {
+  const snap = await getDoc(doc(db, "videoCalls", groupId));
+  return snap.exists() ? (snap.data() as VideoCall) : null;
+}
+
+export async function joinVideoCall(groupId: string, userId: string, userName: string) {
+  const videoCallRef = doc(db, "videoCalls", groupId);
+  
+  await updateDoc(videoCallRef, {
+    participants: arrayUnion({
+      userId,
+      userName,
+      isConnected: true,
+      joinedAt: Date.now(),
+    }),
+    updatedAt: Date.now(),
+  });
+}
+
+export async function leaveVideoCall(groupId: string, userId: string) {
+  const videoCallRef = doc(db, "videoCalls", groupId);
+  const videoCall = await getVideoCall(groupId);
+  
+  if (videoCall) {
+    const updatedParticipants = videoCall.participants.map(p => 
+      p.userId === userId 
+        ? { ...p, isConnected: false, leftAt: Date.now() }
+        : p
+    );
+    
+    const activeParticipants = updatedParticipants.filter(p => p.isConnected);
+    
+    await updateDoc(videoCallRef, {
+      participants: updatedParticipants,
+      isActive: activeParticipants.length > 0,
+      updatedAt: Date.now(),
+    });
+  }
+}
+
+export async function sendVideoCallSignal(signal: Omit<VideoCallSignal, 'id' | 'timestamp'>) {
+  const signalId = crypto.randomUUID();
+  const fullSignal: VideoCallSignal = {
+    ...signal,
+    id: signalId,
+    timestamp: Date.now(),
+  };
+  
+  await setDoc(doc(db, "videoCalls", signal.groupId, "signals", signalId), fullSignal);
+  return signalId;
+}
+
+export function subscribeToVideoCallSignals(groupId: string, callback: (signals: VideoCallSignal[]) => void) {
+  const q = query(
+    collection(db, "videoCalls", groupId, "signals"),
+    orderBy("timestamp", "desc"),
+    limit(50)
+  );
+  
+  return onSnapshot(q, (snapshot) => {
+    const signals = snapshot.docs.map(d => d.data() as VideoCallSignal);
+    callback(signals.reverse()); // Return in chronological order
+  });
+}
+
+export function subscribeToVideoCall(groupId: string, callback: (videoCall: VideoCall | null) => void) {
+  return onSnapshot(doc(db, "videoCalls", groupId), (snapshot) => {
+    const videoCall = snapshot.exists() ? (snapshot.data() as VideoCall) : null;
+    callback(videoCall);
+  });
+}
+
+export async function cleanupVideoCall(groupId: string) {
+  // Remove all signals
+  const signalsQuery = query(collection(db, "videoCalls", groupId, "signals"));
+  const signalsSnapshot = await getDocs(signalsQuery);
+  
+  const deletePromises = signalsSnapshot.docs.map(doc => deleteDoc(doc.ref));
+  await Promise.all(deletePromises);
+  
+  // Remove the video call document
+  await deleteDoc(doc(db, "videoCalls", groupId));
 } 

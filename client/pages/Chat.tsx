@@ -22,10 +22,13 @@ import {
   Users,
   Edit,
   LogOut,
-  Trash2
+  Trash2,
+  Phone
 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { Group, Message } from "../lib/firestore-structure";
+import { useVideoCall } from "../hooks/useVideoCall";
+import { VideoCallModal } from "../components/VideoCallModal";
 
 export function Chat() {
   const { groupId } = useParams<{ groupId: string }>();
@@ -39,8 +42,12 @@ export function Chat() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showProfile, setShowProfile] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [showVideoCall, setShowVideoCall] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Video call hook
+  const videoCall = useVideoCall(groupId || "");
 
   useEffect(() => {
     if (!groupId || !firebaseUser) return;
@@ -214,6 +221,18 @@ export function Chat() {
         </div>
         
         <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setShowVideoCall(true);
+              videoCall.startCall();
+            }}
+            className="p-2"
+            disabled={videoCall.isConnecting}
+          >
+            <Phone className="w-5 h-5" />
+          </Button>
           <Button
             variant="ghost"
             size="sm"
@@ -496,6 +515,28 @@ export function Chat() {
           </div>
         </div>
       )}
+
+      {/* Video Call Modal */}
+      <VideoCallModal
+        isOpen={showVideoCall}
+        onClose={() => {
+          setShowVideoCall(false);
+          videoCall.endCall();
+        }}
+        localStream={videoCall.localStream}
+        remoteStreams={videoCall.remoteStreams}
+        participants={videoCall.participants}
+        isMuted={videoCall.isMuted}
+        isVideoOff={videoCall.isVideoOff}
+        isConnecting={videoCall.isConnecting}
+        error={videoCall.error}
+        onToggleMute={videoCall.toggleMute}
+        onToggleVideo={videoCall.toggleVideo}
+        onEndCall={() => {
+          setShowVideoCall(false);
+          videoCall.endCall();
+        }}
+      />
     </div>
   );
 } 
