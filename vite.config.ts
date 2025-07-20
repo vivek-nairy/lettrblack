@@ -16,7 +16,6 @@ export default defineConfig({
         manualChunks: undefined,
       },
       external: [
-        '@rollup/rollup-linux-x64-gnu',
         'vue'
       ],
     },
