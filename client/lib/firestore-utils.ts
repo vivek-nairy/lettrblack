@@ -11,7 +11,9 @@ import {
   query,
   where,
   orderBy,
-  limit
+  limit,
+  onSnapshot,
+  serverTimestamp
 } from "firebase/firestore";
 import type { User, Group, Note, Progress, Product, AdminLog } from "./firestore-structure";
 
@@ -67,6 +69,77 @@ export async function getGroupsByUser(uid: string) {
   const q = query(collection(db, "groups"), where("memberIds", "array-contains", uid));
   const snap = await getDocs(q);
   return snap.docs.map(d => d.data() as Group);
+}
+
+// Get all groups (for public view or admin)
+export async function getAllGroups() {
+  const q = query(collection(db, "groups"), orderBy("createdAt", "desc"));
+  const snap = await getDocs(q);
+  return snap.docs.map(d => d.data() as Group);
+}
+
+// Get public groups (groups that are not private)
+export async function getPublicGroups() {
+  const q = query(collection(db, "groups"), where("isPrivate", "==", false), orderBy("createdAt", "desc"));
+  const snap = await getDocs(q);
+  return snap.docs.map(d => d.data() as Group);
+}
+
+// Real-time listener for groups
+export function subscribeToGroups(uid: string, callback: (groups: Group[]) => void) {
+  const q = query(collection(db, "groups"), where("memberIds", "array-contains", uid));
+  return onSnapshot(q, (snapshot) => {
+    const groups = snapshot.docs.map(d => d.data() as Group);
+    callback(groups);
+  });
+}
+
+// Real-time listener for all groups
+export function subscribeToAllGroups(callback: (groups: Group[]) => void) {
+  const q = query(collection(db, "groups"), orderBy("createdAt", "desc"));
+  return onSnapshot(q, (snapshot) => {
+    const groups = snapshot.docs.map(d => d.data() as Group);
+    callback(groups);
+  });
+}
+
+// CHAT MESSAGES
+export async function sendMessage(groupId: string, message: {
+  senderId: string;
+  senderName: string;
+  text: string;
+  fileUrl?: string;
+  fileName?: string;
+  fileType?: string;
+}) {
+  const messageData = {
+    id: crypto.randomUUID(),
+    groupId,
+    ...message,
+    timestamp: serverTimestamp(),
+  };
+  await addDoc(collection(db, "groups", groupId, "messages"), messageData);
+}
+
+export async function getMessages(groupId: string) {
+  const q = query(
+    collection(db, "groups", groupId, "messages"),
+    orderBy("timestamp", "asc")
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(d => d.data());
+}
+
+// Real-time listener for messages
+export function subscribeToMessages(groupId: string, callback: (messages: any[]) => void) {
+  const q = query(
+    collection(db, "groups", groupId, "messages"),
+    orderBy("timestamp", "asc")
+  );
+  return onSnapshot(q, (snapshot) => {
+    const messages = snapshot.docs.map(d => d.data());
+    callback(messages);
+  });
 }
 
 // NOTES

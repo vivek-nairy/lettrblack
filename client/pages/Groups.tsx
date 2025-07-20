@@ -16,8 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getGroupsByUser, createGroup } from "@/lib/firestore-utils";
-import { addXpToUser } from "@/lib/firestore-utils";
+import { getGroupsByUser, createGroup, addXpToUser, subscribeToAllGroups, updateGroup } from "@/lib/firestore-utils";
 import { useAuthUser } from "../hooks/useAuthUser";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
@@ -77,7 +76,12 @@ export function Groups() {
 
   useEffect(() => {
     if (firebaseUser) {
-      getGroupsByUser(firebaseUser.uid).then(setGroups);
+      // Use real-time subscription to get all groups
+      const unsubscribe = subscribeToAllGroups((newGroups) => {
+        setGroups(newGroups);
+      });
+      
+      return () => unsubscribe();
     }
   }, [firebaseUser]);
 
@@ -118,7 +122,7 @@ export function Groups() {
       await createGroup(newGroup);
       await addXpToUser(firebaseUser.uid, 50, "create_group", 50);
       dispatchModal({ type: "CLOSE" });
-      getGroupsByUser(firebaseUser.uid).then(setGroups);
+      // Groups will be updated automatically via real-time subscription
     } catch (err) {
       dispatchModal({ type: "SET_ERROR", error: err?.message || "Failed to create group. Please try again." });
     } finally {
@@ -171,6 +175,19 @@ export function Groups() {
     setSelectedGroup(null);
   };
 
+  // Add handler to join group
+  const handleJoinGroup = async (group: any) => {
+    if (!firebaseUser) return;
+    
+    try {
+      const updatedMemberIds = [...(group.memberIds || []), firebaseUser.uid];
+      await updateGroup(group.id, { memberIds: updatedMemberIds });
+      // Groups will be updated automatically via real-time subscription
+    } catch (error) {
+      console.error("Error joining group:", error);
+    }
+  };
+
   return (
     <Layout>
       <div className="space-y-8 pb-20">
@@ -178,10 +195,10 @@ export function Groups() {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">
-              My Study Groups
+              Study Groups
             </h1>
             <p className="text-muted-foreground">
-              Collaborate, learn, and grow with your study communities
+              Discover, join, and collaborate with study communities
             </p>
           </div>
 
@@ -383,13 +400,23 @@ export function Groups() {
 
                 {/* Actions */}
                 <div className="flex gap-3">
-                  <button
-                    onClick={() => navigate(`/groups/${group.id}`)}
-                    className="flex-1 lettrblack-button flex items-center justify-center gap-2"
-                  >
-                    <Play className="w-4 h-4" />
-                    Enter Group
-                  </button>
+                  {group.memberIds?.includes(firebaseUser?.uid) ? (
+                    <button
+                      onClick={() => handleOpenGroup(group)}
+                      className="flex-1 lettrblack-button flex items-center justify-center gap-2"
+                    >
+                      <Play className="w-4 h-4" />
+                      Enter Group
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleJoinGroup(group)}
+                      className="flex-1 bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors duration-200 rounded-lg flex items-center justify-center gap-2"
+                    >
+                      <Users className="w-4 h-4" />
+                      Join Group
+                    </button>
+                  )}
                   <button className="px-4 py-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors duration-200 rounded-lg">
                     <Calendar className="w-4 h-4" />
                   </button>

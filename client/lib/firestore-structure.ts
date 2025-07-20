@@ -26,6 +26,7 @@ export interface Group {
   memberIds: string[];
   inviteCode: string;
   createdAt: number;
+  isPrivate?: boolean;
 }
 
 // NOTES/RESOURCES
@@ -63,6 +64,19 @@ export interface Product {
   fileUrl: string;
   createdAt: number;
   buyers: string[];
+}
+
+// MESSAGES (for group chat)
+export interface Message {
+  id: string;
+  groupId: string;
+  senderId: string;
+  senderName: string;
+  text: string;
+  timestamp: any;
+  fileUrl?: string;
+  fileName?: string;
+  fileType?: string;
 }
 
 // ADMIN TOOLS (for moderation, logs, etc.)
