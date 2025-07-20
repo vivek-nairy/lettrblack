@@ -1,133 +1,300 @@
 import { useEffect, useState } from "react";
 import { Layout } from "@/components/Layout";
-import { UploadModal } from "@/components/UploadModal";
+import { NoteUploadModal, NoteUploadData } from "@/components/NoteUploadModal";
+import { NoteDetailModal } from "@/components/NoteDetailModal";
+import { NotesAIChatbot } from "@/components/NotesAIChatbot";
 import {
   Search,
   Plus,
   FileText,
-  Link,
-  BookOpen,
-  Star,
-  MoreVertical,
   Filter,
   SortDesc,
   Eye,
   Download,
-  ExternalLink,
-  Calendar,
+  DollarSign,
+  Star,
   Tag,
-  Folder,
-  FolderPlus,
+  Calendar,
+  TrendingUp,
+  Sparkles,
+  BookOpen,
+  Image as ImageIcon,
+  CheckCircle,
+  Lock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getNotesByGroup, createNote, updateNote } from "@/lib/firestore-utils";
-import { addXpToUser } from "@/lib/firestore-utils";
+import { 
+  getPublicNotes, 
+  searchNotes, 
+  getNotesBySubject, 
+  getNotesByPriceRange,
+  incrementNoteViews,
+  incrementNoteDownloads,
+  purchaseNote,
+  getUserPurchases,
+  subscribeToPublicNotes,
+  createNote
+} from "@/lib/firestore-utils";
 import { useAuthUser } from "../hooks/useAuthUser";
-import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import { storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { useToast } from "@/hooks/use-toast";
-import { onSnapshot, collection, query, where } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { Note } from "@/lib/firestore-structure";
+import { Button } from "@/components/ui/button";
 
-const noteTypeIcons = {
-  pdf: FileText,
-  link: Link,
-  text: BookOpen,
-};
-
-const noteTypeColors = {
-  pdf: "bg-red-500/10 text-red-400 border-red-500/20",
-  link: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-  text: "bg-green-500/10 text-green-400 border-green-500/20",
-};
-
-const filterOptions = [
-  { id: "all", name: "All Types", count: 5 },
-  { id: "pdf", name: "PDF Files", count: 2 },
-  { id: "link", name: "Links", count: 2 },
-  { id: "text", name: "Text Notes", count: 1 },
-  { id: "starred", name: "Starred", count: 2 },
+const subjects = [
+  "Physics", "Chemistry", "Biology", "Mathematics", "English", 
+  "History", "Geography", "Economics", "Computer Science", "Programming",
+  "Java", "Python", "JavaScript", "React", "Node.js", "Psychology",
+  "Sociology", "Philosophy", "Literature", "Art", "Music", "Other"
 ];
 
 const sortOptions = [
   { id: "newest", name: "Newest First" },
   { id: "oldest", name: "Oldest First" },
   { id: "most-viewed", name: "Most Viewed" },
-  { id: "most-starred", name: "Most Starred" },
+  { id: "most-downloaded", name: "Most Downloaded" },
+  { id: "price-low", name: "Price: Low to High" },
+  { id: "price-high", name: "Price: High to Low" },
   { id: "alphabetical", name: "Alphabetical" },
 ];
 
 export function Notes() {
   const { user, firebaseUser } = useAuthUser();
-  const navigate = useNavigate();
-  const [notes, setNotes] = useState([]);
+  const { toast } = useToast();
+  
+  // State
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedFilter, setSelectedFilter] = useState("all");
+  const [selectedSubject, setSelectedSubject] = useState("");
+  const [priceRange, setPriceRange] = useState({ min: 0, max: 1000 });
   const [sortBy, setSortBy] = useState("newest");
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [groupId, setGroupId] = useState(""); // You might want to get this from URL params or context
-  const { toast } = useToast();
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isPurchasing, setIsPurchasing] = useState(false);
+  const [userPurchases, setUserPurchases] = useState<string[]>([]);
+  const [showAIChatbot, setShowAIChatbot] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Real-time notes listener
+  // Load notes and user purchases
   useEffect(() => {
-    if (!firebaseUser) return;
+    if (!firebaseUser) {
+      setLoading(false);
+      return;
+    }
 
-    const q = query(
-      collection(db, "notes"),
-      where("authorId", "==", firebaseUser.uid)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const notesData = snapshot.docs.map(doc => ({
-        ...doc.data(),
-        id: doc.id
-      }));
+    // Subscribe to public notes
+    const unsubscribeNotes = subscribeToPublicNotes((notesData) => {
       setNotes(notesData);
+      setLoading(false);
     });
 
-    return () => unsubscribe();
+    // Load user purchases
+    const loadPurchases = async () => {
+      try {
+        const purchases = await getUserPurchases(firebaseUser.uid);
+        const purchasedNoteIds = purchases.map(p => p.noteId);
+        setUserPurchases(purchasedNoteIds);
+      } catch (error) {
+        console.error("Error loading purchases:", error);
+      }
+    };
+
+    loadPurchases();
+
+    return () => {
+      unsubscribeNotes();
+    };
   }, [firebaseUser]);
 
-  const filteredAndSortedNotes = notes
-    .filter((note) => {
-      const matchesSearch =
+  // Filter and sort notes
+  useEffect(() => {
+    let filtered = [...notes];
+
+    // Search filter
+    if (searchTerm) {
+      filtered = filtered.filter(note =>
         note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        note.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        note.tags.some((tag) =>
-          tag.toLowerCase().includes(searchTerm.toLowerCase()),
-        ) ||
-        note.author.name.toLowerCase().includes(searchTerm.toLowerCase());
+        note.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        note.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        note.subject.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
 
-      const matchesFilter =
-        selectedFilter === "all" ||
-        note.type === selectedFilter ||
-        (selectedFilter === "starred" && note.starred);
+    // Subject filter
+    if (selectedSubject) {
+      filtered = filtered.filter(note => note.subject === selectedSubject);
+    }
 
-      return matchesSearch && matchesFilter;
-    })
-    .sort((a, b) => {
+    // Price filter
+    filtered = filtered.filter(note => 
+      note.price >= priceRange.min && note.price <= priceRange.max
+    );
+
+    // Sort
+    filtered.sort((a, b) => {
       switch (sortBy) {
         case "oldest":
-          return a.timestamp.getTime() - b.timestamp.getTime();
+          return a.createdAt - b.createdAt;
         case "most-viewed":
           return b.views - a.views;
-        case "most-starred":
-          return Number(b.starred) - Number(a.starred);
+        case "most-downloaded":
+          return b.downloads - a.downloads;
+        case "price-low":
+          return a.price - b.price;
+        case "price-high":
+          return b.price - a.price;
         case "alphabetical":
           return a.title.localeCompare(b.title);
         default: // newest
-          return b.timestamp.getTime() - a.timestamp.getTime();
+          return b.createdAt - a.createdAt;
       }
     });
 
-  const formatTimeAgo = (date: Date) => {
-    const now = new Date();
-    const diffInMinutes = Math.floor(
-      (now.getTime() - date.getTime()) / (1000 * 60),
-    );
+    setFilteredNotes(filtered);
+  }, [notes, searchTerm, selectedSubject, priceRange, sortBy]);
+
+  // AI Chatbot handlers
+  const handleAISearch = (query: string) => {
+    setSearchTerm(query);
+  };
+
+  const handleAIFilterBySubject = (subject: string) => {
+    setSelectedSubject(subject);
+  };
+
+  const handleAIFilterByPrice = (minPrice: number, maxPrice: number) => {
+    setPriceRange({ min: minPrice, max: maxPrice });
+  };
+
+  // Upload handler
+  const handleUpload = async (noteData: NoteUploadData) => {
+    if (!firebaseUser) return;
+
+    setIsUploading(true);
+    try {
+      let fileUrl = "";
+      let coverImageUrl = "";
+
+      // Upload main file
+      if (noteData.file) {
+        const fileName = `${firebaseUser.uid}_${Date.now()}_${noteData.file.name}`;
+        const fileRef = ref(storage, `notes/${fileName}`);
+        await uploadBytes(fileRef, noteData.file);
+        fileUrl = await getDownloadURL(fileRef);
+      }
+
+      // Upload cover image
+      if (noteData.coverImage) {
+        const imageName = `${firebaseUser.uid}_${Date.now()}_cover_${noteData.coverImage.name}`;
+        const imageRef = ref(storage, `covers/${imageName}`);
+        await uploadBytes(imageRef, noteData.coverImage);
+        coverImageUrl = await getDownloadURL(imageRef);
+      }
+
+      // Create note object
+      const note: Partial<Note> = {
+        authorId: firebaseUser.uid,
+        authorName: user?.name || firebaseUser.email || "Anonymous",
+        type: noteData.file?.name.endsWith('.pdf') ? 'pdf' : 
+              noteData.file?.name.endsWith('.docx') ? 'docx' : 
+              noteData.file?.name.endsWith('.doc') ? 'doc' : 'text',
+        title: noteData.title,
+        description: noteData.description,
+        subject: noteData.subject,
+        tags: noteData.tags,
+        price: noteData.price,
+        fileUrl: fileUrl,
+        coverImageUrl: coverImageUrl,
+        content: fileUrl,
+        starredBy: [],
+        views: 0,
+        downloads: 0,
+        purchases: [],
+        isPublic: noteData.isPublic,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      await createNote(note);
+
+      toast({
+        title: "Note uploaded successfully!",
+        description: noteData.isPublic 
+          ? "Your note is now available in the marketplace." 
+          : "Your note has been uploaded to your groups.",
+      });
+
+      setShowUploadModal(false);
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast({
+        title: "Upload failed",
+        description: "There was an error uploading your note. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Purchase handler
+  const handlePurchase = async (noteId: string, price: number) => {
+    if (!firebaseUser) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to purchase notes.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsPurchasing(true);
+    try {
+      // For MVP, we'll simulate a successful purchase
+      // In production, this would integrate with Razorpay/Stripe
+      await purchaseNote(noteId, firebaseUser.uid, price);
+      
+      // Update local state
+      setUserPurchases(prev => [...prev, noteId]);
+      
+      toast({
+        title: "Purchase successful!",
+        description: "You can now download this note.",
+      });
+
+      setShowDetailModal(false);
+    } catch (error) {
+      console.error("Purchase error:", error);
+      toast({
+        title: "Purchase failed",
+        description: "There was an error processing your purchase. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPurchasing(false);
+    }
+  };
+
+  // Note detail handler
+  const handleNoteClick = async (note: Note) => {
+    setSelectedNote(note);
+    setShowDetailModal(true);
+    
+    // Increment view count
+    try {
+      await incrementNoteViews(note.id);
+    } catch (error) {
+      console.error("Error incrementing views:", error);
+    }
+  };
+
+  const formatTimeAgo = (timestamp: number) => {
+    const now = Date.now();
+    const diffInMinutes = Math.floor((now - timestamp) / (1000 * 60));
 
     if (diffInMinutes < 60) {
       return `${diffInMinutes} minutes ago`;
@@ -138,395 +305,280 @@ export function Notes() {
     }
   };
 
-  const handleUpload = async (newNote) => {
-    if (!firebaseUser) return;
-    if (newNote.type !== "pdf") {
-      toast({ title: "Only PDF files are allowed." });
-      return;
-    }
-    if (!newNote.file) {
-      toast({ title: "Please select a PDF file." });
-      return;
-    }
-    if (newNote.file.size > 10 * 1024 * 1024) {
-      toast({ title: "File size must be under 10MB." });
-      return;
-    }
-    setUploading(true);
-    let fileUrl = "";
-    let fileName = "";
-    try {
-      console.log("Starting file upload...");
-      fileName = `${firebaseUser.uid}_${Date.now()}_${newNote.file.name}`;
-      const fileRef = ref(storage, `notes/${fileName}`);
-      console.log("Uploading to Firebase Storage...");
-      await uploadBytes(fileRef, newNote.file);
-      console.log("Getting download URL...");
-      fileUrl = await getDownloadURL(fileRef);
-      console.log("File uploaded successfully:", fileUrl);
-
-      const note = {
-        id: crypto.randomUUID(),
-        groupId,
-        authorId: firebaseUser.uid,
-        type: "pdf" as const,
-        content: fileUrl, // For PDF, content is the file URL
-        title: newNote.title,
-        starredBy: [],
-        createdAt: Date.now(),
-      };
-
-      console.log("Creating note in Firestore...");
-      await createNote(note);
-      console.log("Note created successfully");
-
-      // Add XP for note upload
-      await addXpToUser(firebaseUser.uid, 30, "upload_note", 60);
-
-      toast({
-        title: "Note uploaded successfully!",
-        description: "Your PDF has been uploaded and is now available.",
-      });
-      setShowUploadModal(false);
-    } catch (error) {
-      console.error("Upload error:", error);
-      toast({
-        title: "Upload failed",
-        description: "There was an error uploading your note. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const toggleStar = async (noteId) => {
-    const note = notes.find((n) => n.id === noteId);
-    if (!note || !firebaseUser) return;
-    const isStarred = note.starredBy.includes(firebaseUser.uid);
-    const updatedStarredBy = isStarred
-      ? note.starredBy.filter((uid) => uid !== firebaseUser.uid)
-      : [...note.starredBy, firebaseUser.uid];
-    await updateNote(noteId, { starredBy: updatedStarredBy });
-    getNotesByGroup(groupId).then(setNotes);
-  };
-
-  const handleNoteAction = (note: any, action: string) => {
-    switch (action) {
-      case "view":
-        // Increment view count
-        setNotes(
-          notes.map((n) =>
-            n.id === note.id ? { ...n, views: n.views + 1 } : n,
-          ),
-        );
-        // Handle different note types
-        if (note.type === "link") {
-          window.open(note.url, "_blank");
-        } else if (note.type === "pdf") {
-          console.log("Open PDF:", note.file.name);
-        } else {
-          console.log("Open text note:", note.title);
-        }
-        break;
-      case "download":
-        if (note.type === "pdf") {
-          console.log("Download PDF:", note.file.name);
-        }
-        break;
+  const getFileTypeIcon = (type: string) => {
+    switch (type) {
+      case 'pdf':
+        return <FileText className="w-5 h-5 text-red-500" />;
+      case 'docx':
+      case 'doc':
+        return <FileText className="w-5 h-5 text-blue-500" />;
+      case 'image':
+        return <ImageIcon className="w-5 h-5 text-green-500" />;
+      default:
+        return <FileText className="w-5 h-5 text-gray-500" />;
     }
   };
 
   return (
     <Layout>
-      <div className="flex gap-6 h-[calc(100vh-8rem)]">
-        {/* Loading overlay */}
-        {uploading && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div className="bg-white rounded-lg p-8 flex flex-col items-center gap-4 shadow-xl border border-primary">
-              <svg className="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
-              <div className="text-primary font-semibold">Uploading note...</div>
-            </div>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              Study Notes Marketplace
+            </h1>
+            <p className="text-muted-foreground">
+              Discover and share high-quality study materials
+            </p>
           </div>
-        )}
-        {/* Sidebar */}
-        {showSidebar && (
-          <div className="w-80 flex-shrink-0">
-            <div className="lettrblack-card h-full p-6 space-y-6">
-              {/* Filters */}
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-foreground">Filters</h3>
-                  <button
-                    onClick={() => setShowSidebar(false)}
-                    className="lg:hidden p-1 hover:bg-muted rounded"
-                  >
-                    <Filter className="w-4 h-4" />
-                  </button>
-                </div>
-                <div className="space-y-2">
-                  {filterOptions.map((option) => (
-                    <button
-                      key={option.id}
-                      onClick={() => setSelectedFilter(option.id)}
-                      className={cn(
-                        "w-full flex items-center justify-between p-3 rounded-lg text-left transition-colors",
-                        selectedFilter === option.id
-                          ? "bg-primary/10 text-primary border border-primary/20"
-                          : "hover:bg-muted text-foreground",
-                      )}
-                    >
-                      <span className="font-medium">{option.name}</span>
-                      <span className="text-sm text-muted-foreground">
-                        {option.count}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
 
-              {/* Sort Options */}
-              <div>
-                <h3 className="font-semibold text-foreground mb-4">Sort By</h3>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full p-3 bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  {sortOptions.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Folders */}
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-foreground">Folders</h3>
-                  <button className="p-1 hover:bg-muted rounded">
-                    <FolderPlus className="w-4 h-4 text-primary" />
-                  </button>
-                </div>
-                <div className="space-y-2">
-                  <button className="w-full flex items-center gap-2 p-2 rounded hover:bg-muted text-left">
-                    <Folder className="w-4 h-4 text-blue-400" />
-                    <span className="text-sm">General Notes</span>
-                  </button>
-                  <button className="w-full flex items-center gap-2 p-2 rounded hover:bg-muted text-left">
-                    <Folder className="w-4 h-4 text-green-400" />
-                    <span className="text-sm">Exam Prep</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Main Content */}
-        <div className="flex-1 space-y-6">
-          {/* Header */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground mb-2">
-                Shared Notes
-              </h1>
-              <p className="text-muted-foreground">
-                Collaborate on study materials with your group
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              {!showSidebar && (
-                <button
-                  onClick={() => setShowSidebar(true)}
-                  className="lg:hidden p-2 bg-secondary rounded-lg"
-                >
-                  <Filter className="w-4 h-4" />
-                </button>
-              )}
-              <button
+          <div className="flex items-center gap-3">
+            {firebaseUser && (
+              <Button
                 onClick={() => setShowUploadModal(true)}
                 className="lettrblack-button flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
-                Add Note
-              </button>
+                Upload Note
+              </Button>
+            )}
+            <Button
+              onClick={() => setShowAIChatbot(!showAIChatbot)}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Sparkles className="w-4 h-4" />
+              AI Assistant
+            </Button>
+          </div>
+        </div>
+
+        {/* Search and Filters */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          {/* Search */}
+          <div className="lg:col-span-2">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search notes by title, tags, or subject..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-ring text-foreground placeholder:text-muted-foreground"
+              />
             </div>
           </div>
 
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search notes by title, tags, or author..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-ring text-foreground placeholder:text-muted-foreground text-lg"
-            />
+          {/* Subject Filter */}
+          <div>
+            <select
+              value={selectedSubject}
+              onChange={(e) => setSelectedSubject(e.target.value)}
+              className="w-full p-3 bg-card border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="">All Subjects</option>
+              {subjects.map(subject => (
+                <option key={subject} value={subject}>{subject}</option>
+              ))}
+            </select>
           </div>
 
-          {/* Notes Grid */}
-          {filteredAndSortedNotes.length > 0 ? (
-            <div className="space-y-4">
-              {filteredAndSortedNotes.map((note) => {
-                const IconComponent = noteTypeIcons[note.type];
-                return (
-                  <div
-                    key={note.id}
-                    className="lettrblack-card group hover:scale-[1.01] transition-all duration-200 cursor-pointer"
-                  >
-                    <div className="flex items-start gap-4">
-                      {/* Type Icon */}
-                      <div
-                        className={cn(
-                          "w-12 h-12 rounded-lg border flex items-center justify-center flex-shrink-0",
-                          noteTypeColors[note.type],
+          {/* Sort */}
+          <div>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="w-full p-3 bg-card border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              {sortOptions.map(option => (
+                <option key={option.id} value={option.id}>{option.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Price Range Filter */}
+        <div className="flex items-center gap-4">
+          <span className="text-sm font-medium text-foreground">Price Range:</span>
+          <input
+            type="number"
+            placeholder="Min"
+            value={priceRange.min}
+            onChange={(e) => setPriceRange(prev => ({ ...prev, min: parseInt(e.target.value) || 0 }))}
+            className="w-20 p-2 bg-card border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+          <span className="text-muted-foreground">to</span>
+          <input
+            type="number"
+            placeholder="Max"
+            value={priceRange.max}
+            onChange={(e) => setPriceRange(prev => ({ ...prev, max: parseInt(e.target.value) || 1000 }))}
+            className="w-20 p-2 bg-card border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+          <span className="text-muted-foreground">₹</span>
+        </div>
+
+        {/* Notes Grid */}
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        ) : filteredNotes.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredNotes.map((note) => {
+              const hasPurchased = userPurchases.includes(note.id);
+              const isOwner = firebaseUser?.uid === note.authorId;
+              const canDownload = hasPurchased || isOwner || note.price === 0;
+
+              return (
+                <div
+                  key={note.id}
+                  onClick={() => handleNoteClick(note)}
+                  className="lettrblack-card group hover:scale-[1.02] transition-all duration-200 cursor-pointer"
+                >
+                  {/* Cover Image */}
+                  {note.coverImageUrl && (
+                    <div className="relative h-48 mb-4">
+                      <img
+                        src={note.coverImageUrl}
+                        alt={note.title}
+                        className="w-full h-full object-cover rounded-t-lg"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-t-lg" />
+                      
+                      {/* Price Badge */}
+                      <div className="absolute top-3 right-3">
+                        {note.price > 0 ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-primary/90 text-primary-foreground rounded-full text-sm font-medium">
+                            <DollarSign className="w-3 h-3" />
+                            ₹{note.price}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-500/90 text-white rounded-full text-sm font-medium">
+                            <CheckCircle className="w-3 h-3" />
+                            Free
+                          </span>
                         )}
-                      >
-                        <IconComponent className="w-6 h-6" />
                       </div>
 
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between mb-2">
-                          <h3 className="font-semibold text-foreground text-lg leading-tight">
-                            {note.title}
-                          </h3>
-                          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleStar(note.id);
-                              }}
-                              className={cn(
-                                "p-2 rounded-lg transition-colors",
-                                note.starred
-                                  ? "text-yellow-400 hover:bg-yellow-400/10"
-                                  : "text-muted-foreground hover:bg-muted",
-                              )}
-                            >
-                              <Star
-                                className={cn(
-                                  "w-4 h-4",
-                                  note.starred && "fill-current",
-                                )}
-                              />
-                            </button>
-                            <button className="p-2 text-muted-foreground hover:bg-muted rounded-lg transition-colors">
-                              <MoreVertical className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-
-                        <p className="text-muted-foreground mb-3 line-clamp-2">
-                          {note.description}
-                        </p>
-
-                        {/* Tags */}
-                        {note.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mb-3">
-                            {note.tags.map((tag) => (
-                              <span
-                                key={tag}
-                                className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium"
-                              >
-                                <Tag className="w-3 h-3" />
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
+                      {/* Status Badges */}
+                      <div className="absolute top-3 left-3 flex gap-1">
+                        {hasPurchased && (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-500/90 text-white rounded-full text-xs font-medium">
+                            <CheckCircle className="w-3 h-3" />
+                            Owned
+                          </span>
                         )}
+                        {isOwner && (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-500/90 text-white rounded-full text-xs font-medium">
+                            <Star className="w-3 h-3" />
+                            Yours
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
-                        {/* Footer */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2">
-                              <img
-                                src={note.author.avatar}
-                                alt={note.author.name}
-                                className="w-6 h-6 rounded-full object-cover"
-                              />
-                              <span className="text-sm text-muted-foreground">
-                                {note.author.name}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                              <Calendar className="w-3 h-3" />
-                              {formatTimeAgo(note.timestamp)}
-                            </div>
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                              <Eye className="w-3 h-3" />
-                              {note.views} views
-                            </div>
-                          </div>
+                  {/* Content */}
+                  <div className="p-4">
+                    <div className="flex items-start gap-3 mb-3">
+                      {getFileTypeIcon(note.type)}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-foreground text-lg leading-tight line-clamp-2">
+                          {note.title}
+                        </h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {note.subject}
+                        </p>
+                      </div>
+                    </div>
 
-                          <div className="flex items-center gap-2">
-                            {note.type === "pdf" && note.fileUrl && (
-                              <a href={note.fileUrl} target="_blank" rel="noopener noreferrer" className="lettrblack-button text-sm flex items-center gap-1">
-                                <FileText className="w-4 h-4" />
-                                View PDF
-                              </a>
-                            )}
-                            {note.type === "docx" && note.fileUrl && (
-                              <a href={note.fileUrl} target="_blank" rel="noopener noreferrer" className="lettrblack-button text-sm flex items-center gap-1">
-                                <FileText className="w-4 h-4" />
-                                Download DOCX
-                              </a>
-                            )}
-                            {note.type === "text" && note.content && (
-                              <div className="bg-muted p-2 rounded text-sm max-w-xs overflow-x-auto">
-                                {note.content}
-                              </div>
-                            )}
-                            {note.type === "link" && note.url && (
-                              <a href={note.url} target="_blank" rel="noopener noreferrer" className="lettrblack-button text-sm flex items-center gap-1">
-                                <ExternalLink className="w-4 h-4" />
-                                Open Link
-                              </a>
-                            )}
-                            {note.type === "image" && note.fileUrl && (
-                              <a href={note.fileUrl} target="_blank" rel="noopener noreferrer">
-                                <img src={note.fileUrl} alt={note.title} className="w-12 h-12 object-cover rounded" />
-                              </a>
-                            )}
-                          </div>
+                    {note.description && (
+                      <p className="text-muted-foreground mb-3 line-clamp-2 text-sm">
+                        {note.description}
+                      </p>
+                    )}
+
+                    {/* Tags */}
+                    {note.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-3">
+                        {note.tags.slice(0, 3).map((tag) => (
+                          <span
+                            key={tag}
+                            className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium"
+                          >
+                            <Tag className="w-3 h-3" />
+                            {tag}
+                          </span>
+                        ))}
+                        {note.tags.length > 3 && (
+                          <span className="text-xs text-muted-foreground">
+                            +{note.tags.length - 3} more
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Footer */}
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1">
+                          <Eye className="w-3 h-3" />
+                          {note.views}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Download className="w-3 h-3" />
+                          {note.downloads}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {formatTimeAgo(note.createdAt)}
                         </div>
                       </div>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          ) : (
-            // Empty State
-            <div className="text-center py-16">
-              <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <BookOpen className="w-12 h-12 text-primary" />
-              </div>
-              <h2 className="text-2xl font-semibold text-foreground mb-4">
-                {searchTerm || selectedFilter !== "all"
-                  ? "No notes found"
-                  : "No notes yet"}
-              </h2>
-              <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-                {searchTerm || selectedFilter !== "all"
-                  ? "Try adjusting your search or filters to find the notes you're looking for."
-                  : "Upload your first resource to help your group! Share PDFs, links, or create text notes."}
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">No notes found</h3>
+            <p className="text-muted-foreground">
+              Try adjusting your search criteria or upload the first note!
+            </p>
+          </div>
+        )}
 
-      {/* Upload Modal */}
-      <UploadModal
-        isOpen={showUploadModal}
-        onClose={() => setShowUploadModal(false)}
-        onUpload={handleUpload}
-      />
+        {/* Modals */}
+        <NoteUploadModal
+          isOpen={showUploadModal}
+          onClose={() => setShowUploadModal(false)}
+          onSubmit={handleUpload}
+          isUploading={isUploading}
+        />
+
+        <NoteDetailModal
+          note={selectedNote}
+          isOpen={showDetailModal}
+          onClose={() => setShowDetailModal(false)}
+          onPurchase={handlePurchase}
+          hasPurchased={selectedNote ? userPurchases.includes(selectedNote.id) : false}
+          isPurchasing={isPurchasing}
+          currentUserId={firebaseUser?.uid}
+        />
+
+        {/* AI Chatbot */}
+        <NotesAIChatbot
+          onSearch={handleAISearch}
+          onFilterBySubject={handleAIFilterBySubject}
+          onFilterByPrice={handleAIFilterByPrice}
+          isOpen={showAIChatbot}
+          onToggle={() => setShowAIChatbot(!showAIChatbot)}
+        />
+      </div>
     </Layout>
   );
 }

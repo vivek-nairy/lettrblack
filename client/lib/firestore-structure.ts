@@ -33,12 +33,38 @@ export interface Group {
 // NOTES/RESOURCES
 export interface Note {
   id: string;
-  groupId: string;
+  groupId?: string; // Optional for marketplace notes
   authorId: string;
-  type: "pdf" | "link" | "text" | "markdown";
+  authorName: string;
+  type: "pdf" | "link" | "text" | "markdown" | "docx" | "doc" | "image";
   content: string; // URL or text
   title: string;
+  description?: string;
+  tags: string[];
+  subject: string;
+  price: number; // 0 = free
+  fileUrl?: string;
+  coverImageUrl?: string;
   starredBy: string[];
+  views: number;
+  downloads: number;
+  purchases: string[]; // Array of user IDs who purchased
+  isPublic: boolean; // For marketplace visibility
+  createdAt: number;
+  updatedAt: number;
+}
+
+// PURCHASES
+export interface Purchase {
+  id: string;
+  noteId: string;
+  buyerId: string;
+  sellerId: string;
+  amount: number;
+  currency: string;
+  status: "pending" | "completed" | "failed" | "refunded";
+  paymentMethod: string;
+  transactionId?: string;
   createdAt: number;
 }
 

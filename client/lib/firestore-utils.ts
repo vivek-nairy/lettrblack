@@ -13,7 +13,9 @@ import {
   orderBy,
   limit,
   onSnapshot,
-  serverTimestamp
+  serverTimestamp,
+  increment,
+  arrayUnion
 } from "firebase/firestore";
 import type { User, Group, Note, Progress, Product, AdminLog } from "./firestore-structure";
 
@@ -152,9 +154,15 @@ export function subscribeToMessages(groupId: string, callback: (messages: any[])
 }
 
 // NOTES
-export async function createNote(note: Note) {
-  const ref = doc(db, "notes", note.id);
-  await setDoc(ref, note);
+export async function createNote(note: Partial<Note>) {
+  const noteWithId = {
+    ...note,
+    id: crypto.randomUUID(),
+  } as Note;
+  
+  const ref = doc(db, "notes", noteWithId.id);
+  await setDoc(ref, noteWithId);
+  return noteWithId.id;
 }
 export async function getNote(id: string) {
   const snap = await getDoc(doc(db, "notes", id));
@@ -175,6 +183,120 @@ export async function getNotesByUser(userId: string) {
   const q = query(collection(db, "notes"), where("authorId", "==", userId));
   const snap = await getDocs(q);
   return snap.docs.map(d => d.data() as Note);
+}
+
+// MARKETPLACE FUNCTIONS
+export async function getPublicNotes() {
+  const q = query(
+    collection(db, "notes"), 
+    where("isPublic", "==", true),
+    orderBy("createdAt", "desc")
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(d => d.data() as Note);
+}
+
+export async function getNotesBySubject(subject: string) {
+  const q = query(
+    collection(db, "notes"), 
+    where("isPublic", "==", true),
+    where("subject", "==", subject),
+    orderBy("createdAt", "desc")
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(d => d.data() as Note);
+}
+
+export async function getNotesByPriceRange(minPrice: number, maxPrice: number) {
+  const q = query(
+    collection(db, "notes"), 
+    where("isPublic", "==", true),
+    where("price", ">=", minPrice),
+    where("price", "<=", maxPrice),
+    orderBy("price", "asc")
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(d => d.data() as Note);
+}
+
+export async function searchNotes(searchTerm: string) {
+  const q = query(
+    collection(db, "notes"), 
+    where("isPublic", "==", true),
+    orderBy("title", "asc")
+  );
+  const snap = await getDocs(q);
+  const notes = snap.docs.map(d => d.data() as Note);
+  
+  return notes.filter(note => 
+    note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    note.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    note.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    note.subject.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+}
+
+export async function incrementNoteViews(noteId: string) {
+  const noteRef = doc(db, "notes", noteId);
+  await updateDoc(noteRef, {
+    views: increment(1)
+  });
+}
+
+export async function incrementNoteDownloads(noteId: string) {
+  const noteRef = doc(db, "notes", noteId);
+  await updateDoc(noteRef, {
+    downloads: increment(1)
+  });
+}
+
+export async function purchaseNote(noteId: string, buyerId: string, amount: number) {
+  const noteRef = doc(db, "notes", noteId);
+  const purchaseRef = doc(db, "purchases", crypto.randomUUID());
+  
+  const purchase = {
+    id: purchaseRef.id,
+    noteId,
+    buyerId,
+    sellerId: "", // Will be set from note
+    amount,
+    currency: "INR",
+    status: "completed" as const,
+    paymentMethod: "razorpay",
+    createdAt: Date.now(),
+  };
+  
+  await Promise.all([
+    setDoc(purchaseRef, purchase),
+    updateDoc(noteRef, {
+      purchases: arrayUnion(buyerId)
+    })
+  ]);
+  
+  return purchase;
+}
+
+export async function getUserPurchases(userId: string) {
+  const q = query(
+    collection(db, "purchases"), 
+    where("buyerId", "==", userId),
+    orderBy("createdAt", "desc")
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(d => d.data());
+}
+
+// Real-time listeners for marketplace
+export function subscribeToPublicNotes(callback: (notes: Note[]) => void) {
+  const q = query(
+    collection(db, "notes"), 
+    where("isPublic", "==", true),
+    orderBy("createdAt", "desc")
+  );
+  return onSnapshot(q, (snapshot) => {
+    const notes = snapshot.docs.map(d => d.data() as Note);
+    callback(notes);
+  });
 }
 
 // PROGRESS
