@@ -22,6 +22,7 @@ export interface Group {
   subject: string;
   description: string;
   bannerUrl?: string;
+  groupImageUrl?: string;
   ownerId: string;
   memberIds: string[];
   inviteCode: string;

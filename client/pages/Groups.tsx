@@ -102,22 +102,24 @@ export function Groups() {
     }
     dispatchModal({ type: "SET_LOADING", loading: true });
     try {
-      let bannerUrl = "";
+      let groupImageUrl = "";
       if (modal.image) {
-        const fileRef = ref(storage, `group-banners/${firebaseUser.uid}_${Date.now()}_${modal.image.name}`);
+        const fileRef = ref(storage, `group-images/${firebaseUser.uid}_${Date.now()}_${modal.image.name}`);
         await uploadBytes(fileRef, modal.image);
-        bannerUrl = await getDownloadURL(fileRef);
+        groupImageUrl = await getDownloadURL(fileRef);
       }
       const newGroup = {
         name: modal.name.trim(),
         subject: modal.subject.trim(),
         description: modal.description.trim(),
-        bannerUrl,
+        bannerUrl: groupImageUrl, // Keep bannerUrl for backward compatibility
+        groupImageUrl, // Add new field for group image
         id: crypto.randomUUID(),
         ownerId: firebaseUser.uid,
         memberIds: [firebaseUser.uid],
         inviteCode: Math.random().toString(36).substring(2, 8),
         createdAt: Date.now(),
+        isPrivate: false, // Default to public
       };
       await createGroup(newGroup);
       await addXpToUser(firebaseUser.uid, 50, "create_group", 50);
@@ -320,11 +322,19 @@ export function Groups() {
                     <div className="flex items-center gap-2 mb-1">
                       <div
                         className={cn(
-                          "w-10 h-10 rounded-lg flex items-center justify-center",
+                          "w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden",
                           group.bgAccent,
                         )}
                       >
-                        <BookOpen className="w-5 h-5 text-white" />
+                        {group.groupImageUrl ? (
+                          <img 
+                            src={group.groupImageUrl} 
+                            alt={group.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <BookOpen className="w-5 h-5 text-white" />
+                        )}
                       </div>
                       <div>
                         <h3 className="font-semibold text-foreground text-lg">
@@ -501,21 +511,47 @@ export function Groups() {
                   disabled={modal.loading}
                 />
                 <div>
-                  <label className="block text-sm font-medium mb-1">Group Banner (optional)</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={e => {
-                      if (e.target.files && e.target.files[0]) {
-                        dispatchModal({ type: "SET_FIELD", field: "image", value: e.target.files[0] });
-                        dispatchModal({ type: "SET_FIELD", field: "imageUrl", value: URL.createObjectURL(e.target.files[0]) });
-                      }
-                    }}
-                    disabled={modal.loading}
-                  />
-                  {modal.imageUrl && (
-                    <img src={modal.imageUrl} alt="Preview" className="mt-2 w-full h-32 object-cover rounded-lg border" />
-                  )}
+                  <label className="block text-sm font-medium mb-2">Group Image (optional)</label>
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center border-2 border-dashed border-border hover:border-primary transition-colors cursor-pointer">
+                        {modal.imageUrl ? (
+                          <img 
+                            src={modal.imageUrl} 
+                            alt="Group preview" 
+                            className="w-full h-full rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="text-muted-foreground text-center">
+                            <div className="text-xs">Add</div>
+                            <div className="text-xs">Photo</div>
+                          </div>
+                        )}
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={e => {
+                          if (e.target.files && e.target.files[0]) {
+                            dispatchModal({ type: "SET_FIELD", field: "image", value: e.target.files[0] });
+                            dispatchModal({ type: "SET_FIELD", field: "imageUrl", value: URL.createObjectURL(e.target.files[0]) });
+                          }
+                        }}
+                        disabled={modal.loading}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-muted-foreground">
+                        Upload a group image to make it easier for members to identify your group.
+                      </p>
+                      {modal.image && (
+                        <p className="text-xs text-foreground mt-1">
+                          Selected: {modal.image.name}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
               <div className="flex gap-2 mt-6 justify-end">
@@ -539,34 +575,35 @@ export function Groups() {
 
         {/* Group Details Modal with Chat */}
         {selectedGroup && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-            <div className="bg-card border border-border rounded-xl w-full max-w-2xl p-6 relative">
-              <button
-                className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
-                onClick={handleCloseGroup}
-              >
-                ×
-              </button>
-              <h2 className="text-2xl font-bold mb-2">{selectedGroup?.name || "No name"}</h2>
-              <p className="text-muted-foreground mb-2">{selectedGroup?.subject || "No subject"}</p>
-              {selectedGroup?.bannerUrl && (
-                <img src={selectedGroup.bannerUrl} alt="Banner" className="mb-4 w-full h-40 object-cover rounded-lg" />
-              )}
-              <p className="mb-4">{selectedGroup?.description || "No description"}</p>
-              <div className="mb-4">
-                <strong>Invite Code:</strong> {selectedGroup?.inviteCode || "-"}
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-card border border-border rounded-xl w-full max-w-4xl h-[80vh] flex flex-col">
+              <div className="p-6 border-b border-border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-semibold">
+                      {selectedGroup?.name?.charAt(0).toUpperCase() || "G"}
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold">{selectedGroup?.name || "No name"}</h2>
+                      <p className="text-muted-foreground">{selectedGroup?.subject || "No subject"}</p>
+                    </div>
+                  </div>
+                  <button
+                    className="text-muted-foreground hover:text-foreground p-2"
+                    onClick={handleCloseGroup}
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
-              <div className="mb-4">
-                <strong>Created:</strong> {selectedGroup?.createdAt ? new Date(selectedGroup.createdAt).toLocaleString() : "-"}
-              </div>
-              <div className="mb-4">
-                <strong>Owner:</strong> {selectedGroup?.ownerId || "-"}
-              </div>
-              <div className="mb-4">
-                <strong>Members:</strong> {selectedGroup?.memberIds?.length || 1}
-              </div>
-              <div className="mb-4">
-                <GroupChat groupId={selectedGroup?.id || ""} />
+              
+              <div className="flex-1 p-6">
+                <GroupChat 
+                  groupId={selectedGroup?.id || ""} 
+                  groupName={selectedGroup?.name}
+                  groupImage={selectedGroup?.bannerUrl}
+                  onClose={handleCloseGroup}
+                />
               </div>
             </div>
           </div>
