@@ -550,7 +550,7 @@ export function Chat() {
 
       {/* Video Call Modal */}
       <VideoCallModal
-        isOpen={showVideoCall}
+        isOpen={showVideoCall && videoCall.isInCall}
         onClose={() => {
           setShowVideoCall(false);
           // Do NOT call videoCall.endCall() here
