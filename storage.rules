@@ -1,0 +1,24 @@
+rules_version = '2';
+
+// Craft rules based on data in your Firestore database
+// allow write: if firestore.get(
+//    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Allow authenticated users to upload notes and covers
+    match /notes/{fileName} {
+      allow read: if true;  // Anyone can read notes (for marketplace)
+      allow write: if request.auth != null;  // Only authenticated users can upload
+    }
+    
+    match /covers/{fileName} {
+      allow read: if true;  // Anyone can read cover images
+      allow write: if request.auth != null;  // Only authenticated users can upload
+    }
+    
+    // Allow authenticated users to upload to any path (for flexibility)
+    match /{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+} 

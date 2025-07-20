@@ -309,6 +309,8 @@ export function Notes() {
         errorMessage = "Upload failed: Storage quota exceeded.";
       } else if (error.code === 'storage/retry-limit-exceeded') {
         errorMessage = "Upload failed: Network error. Please check your connection and try again.";
+      } else if (error.message && error.message.includes('CORS')) {
+        errorMessage = "Upload failed: CORS error. Please configure Firebase Storage CORS rules for your domain.";
       } else if (error.message) {
         errorMessage = `Upload failed: ${error.message}`;
       }
