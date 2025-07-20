@@ -15,6 +15,9 @@ export default defineConfig(({ mode }) => ({
       output: {
         manualChunks: undefined,
       },
+      external: [
+        '@rollup/rollup-linux-x64-gnu'
+      ],
     },
   },
   plugins: [react(), mode === 'serve' ? expressPlugin() : null].filter(Boolean),
