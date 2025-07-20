@@ -253,6 +253,12 @@ export function useVideoCall(groupId: string, groupName?: string) {
   const startCall = useCallback(async () => {
     if (!firebaseUser) return;
 
+    // Prevent multiple simultaneous calls
+    if (state.isInCall || state.isConnecting) {
+      console.log('🚫 Call already in progress, ignoring start request');
+      return;
+    }
+
     console.log('🚀 Starting video call...');
     setState(prev => ({ ...prev, isConnecting: true, error: null }));
 
@@ -301,31 +307,33 @@ export function useVideoCall(groupId: string, groupName?: string) {
           videoCallRef.current = updatedVideoCall;
           setState(prev => ({ ...prev, participants: updatedVideoCall.participants }));
           
-          // Handle new participants joining
-          const newParticipants = updatedVideoCall.participants.filter(
-            p => p.userId !== firebaseUser.uid && !peerConnections.current.has(p.userId)
-          );
-          
-                     newParticipants.forEach(participant => {
-             console.log(`🆕 New participant joined: ${participant.userId}`);
-             // Create offer for new participant
-             const pc = createPeerConnection(participant.userId);
-             
-             pc.createOffer().then(offer => {
-               pc.setLocalDescription(offer);
-               return sendVideoCallSignal({
-                 groupId,
-                 fromUserId: firebaseUser.uid,
-                 toUserId: participant.userId,
-                 type: 'offer',
-                 data: offer,
-               });
-             }).then(() => {
-               console.log(`📤 Sent offer to new participant ${participant.userId}`);
-             }).catch(error => {
-               console.error(`❌ Error creating offer for ${participant.userId}:`, error);
-             });
-           });
+          // Handle new participants joining - only if we're already in the call
+          if (state.isInCall) {
+            const newParticipants = updatedVideoCall.participants.filter(
+              p => p.userId !== firebaseUser.uid && !peerConnections.current.has(p.userId)
+            );
+            
+            newParticipants.forEach(participant => {
+              console.log(`🆕 New participant joined: ${participant.userId}`);
+              // Create offer for new participant
+              const pc = createPeerConnection(participant.userId);
+              
+              pc.createOffer().then(offer => {
+                pc.setLocalDescription(offer);
+                return sendVideoCallSignal({
+                  groupId,
+                  fromUserId: firebaseUser.uid,
+                  toUserId: participant.userId,
+                  type: 'offer',
+                  data: offer,
+                });
+              }).then(() => {
+                console.log(`📤 Sent offer to new participant ${participant.userId}`);
+              }).catch(error => {
+                console.error(`❌ Error creating offer for ${participant.userId}:`, error);
+              });
+            });
+          }
         }
       });
 
@@ -353,7 +361,7 @@ export function useVideoCall(groupId: string, groupName?: string) {
         error: error instanceof Error ? error.message : 'Failed to start call'
       }));
     }
-  }, [groupId, firebaseUser, createPeerConnection, groupName]);
+  }, [groupId, firebaseUser, createPeerConnection, groupName, state.isInCall, state.isConnecting]);
 
   // Handle incoming signals with enhanced logging
   const handleSignals = useCallback(async (signals: VideoCallSignal[]) => {
@@ -532,6 +540,12 @@ export function useVideoCall(groupId: string, groupName?: string) {
   const endCall = useCallback(async () => {
     if (!firebaseUser) return;
 
+    // Prevent multiple end calls
+    if (!state.isInCall && !state.isConnecting) {
+      console.log('🚫 No call in progress, ignoring end request');
+      return;
+    }
+
     console.log('🔚 Ending video call...');
 
     // Stop local stream
@@ -597,7 +611,7 @@ export function useVideoCall(groupId: string, groupName?: string) {
       connectionStatus: new Map(),
       connectionTimeouts: new Map(),
     });
-  }, [groupId, firebaseUser, groupName, clearConnectionTimeout]);
+  }, [groupId, firebaseUser, groupName, clearConnectionTimeout, state.isInCall, state.isConnecting]);
 
   // Toggle mute
   const toggleMute = useCallback(() => {

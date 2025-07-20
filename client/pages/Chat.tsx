@@ -82,13 +82,17 @@ export function Chat() {
         toast({
           title: "Incoming Group Call",
           description: `${callEvent.startedByName} started a call in ${callEvent.groupName}`,
-          action: {
-            label: "Join",
-            onClick: () => {
-              setShowVideoCall(true);
-              videoCall.startCall();
-            }
-          }
+          action: (
+            <button
+              onClick={() => {
+                setShowVideoCall(true);
+                videoCall.startCall();
+              }}
+              className="inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium ring-offset-background transition-colors hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+            >
+              Join
+            </button>
+          )
         });
       }
     });
@@ -253,8 +257,10 @@ export function Chat() {
             variant="ghost"
             size="sm"
             onClick={() => {
-              setShowVideoCall(true);
-              videoCall.startCall();
+              if (!videoCall.isInCall && !videoCall.isConnecting) {
+                setShowVideoCall(true);
+                videoCall.startCall();
+              }
             }}
             className="p-2"
             disabled={videoCall.isConnecting}
