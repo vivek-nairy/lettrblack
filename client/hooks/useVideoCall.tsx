@@ -10,6 +10,7 @@ import {
   subscribeToVideoCall,
   cleanupVideoCall
 } from '@/lib/firestore-utils';
+import { sendCallNotification, updateCallStatus, endCall, sendCallEndedNotification } from '@/lib/call-notification-service';
 import { VideoCall, VideoCallSignal } from '@/lib/firestore-structure';
 
 interface VideoCallState {
@@ -23,7 +24,7 @@ interface VideoCallState {
   error: string | null;
 }
 
-export function useVideoCall(groupId: string) {
+export function useVideoCall(groupId: string, groupName?: string) {
   const { firebaseUser } = useAuthUser();
   const [state, setState] = useState<VideoCallState>({
     isInCall: false,
@@ -112,6 +113,16 @@ export function useVideoCall(groupId: string) {
         // Create new call
         const roomId = crypto.randomUUID();
         videoCall = await createVideoCall(groupId, roomId);
+        
+        // Send call notification to group members
+        if (groupName && firebaseUser) {
+          await sendCallNotification(
+            groupId,
+            firebaseUser.uid,
+            firebaseUser.displayName || 'Anonymous',
+            groupName
+          );
+        }
       }
 
       videoCallRef.current = videoCall;
@@ -138,6 +149,9 @@ export function useVideoCall(groupId: string) {
         isConnecting: false,
         participants: videoCall?.participants || []
       }));
+
+      // Update call status to active
+      await updateCallStatus(groupId, 'active');
 
     } catch (error) {
       console.error('Error starting call:', error);
@@ -268,6 +282,17 @@ export function useVideoCall(groupId: string) {
     const videoCall = await getVideoCall(groupId);
     if (videoCall && videoCall.participants.filter(p => p.isConnected).length === 0) {
       await cleanupVideoCall(groupId);
+      
+      // End call and send notification
+      await endCall(groupId);
+      if (groupName && firebaseUser) {
+        await sendCallEndedNotification(
+          groupId,
+          firebaseUser.uid,
+          firebaseUser.displayName || 'Anonymous',
+          groupName
+        );
+      }
     }
 
     // Unsubscribe

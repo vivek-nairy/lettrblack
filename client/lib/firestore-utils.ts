@@ -17,7 +17,7 @@ import {
   increment,
   arrayUnion
 } from "firebase/firestore";
-import type { User, Group, Note, Progress, Product, AdminLog, VideoCall, VideoCallSignal } from "./firestore-structure";
+import type { User, Group, Note, Progress, Product, AdminLog, VideoCall, VideoCallSignal, CallEvent, UserNotification, FCMToken } from "./firestore-structure";
 
 // USERS
 export async function createUser(user: User) {
@@ -605,4 +605,107 @@ export async function cleanupVideoCall(groupId: string) {
   
   // Remove the video call document
   await deleteDoc(doc(db, "videoCalls", groupId));
+} 
+
+// NOTIFICATION & CALL EVENT UTILITIES
+export async function createCallEvent(callEvent: Omit<CallEvent, 'timestamp'>) {
+  const event: CallEvent = {
+    ...callEvent,
+    timestamp: Date.now(),
+  };
+  
+  await setDoc(doc(db, "callEvents", callEvent.groupId), event);
+  return event;
+}
+
+export async function getCallEvent(groupId: string) {
+  const snap = await getDoc(doc(db, "callEvents", groupId));
+  return snap.exists() ? (snap.data() as CallEvent) : null;
+}
+
+export function subscribeToCallEvents(groupId: string, callback: (event: CallEvent | null) => void) {
+  return onSnapshot(doc(db, "callEvents", groupId), (snapshot) => {
+    const event = snapshot.exists() ? (snapshot.data() as CallEvent) : null;
+    callback(event);
+  });
+}
+
+export async function updateCallEventStatus(groupId: string, status: CallEvent['status']) {
+  await updateDoc(doc(db, "callEvents", groupId), {
+    status,
+    timestamp: Date.now(),
+  });
+}
+
+export async function endCallEvent(groupId: string) {
+  await updateDoc(doc(db, "callEvents", groupId), {
+    status: 'ended',
+    timestamp: Date.now(),
+  });
+}
+
+// FCM Token Management
+export async function saveFCMToken(userId: string, token: string, deviceType: 'web' | 'mobile' = 'web') {
+  const fcmToken: FCMToken = {
+    userId,
+    token,
+    deviceType,
+    lastUpdated: Date.now(),
+  };
+  
+  await setDoc(doc(db, "fcmTokens", token), fcmToken);
+}
+
+export async function getFCMTokensForUsers(userIds: string[]) {
+  const q = query(
+    collection(db, "fcmTokens"),
+    where("userId", "in", userIds)
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(d => d.data() as FCMToken);
+}
+
+export async function removeFCMToken(token: string) {
+  await deleteDoc(doc(db, "fcmTokens", token));
+}
+
+// User Notifications
+export async function createUserNotification(notification: Omit<UserNotification, 'id' | 'createdAt'>) {
+  const userNotification: UserNotification = {
+    ...notification,
+    id: crypto.randomUUID(),
+    createdAt: Date.now(),
+  };
+  
+  await setDoc(doc(db, "users", notification.userId, "notifications", userNotification.id), userNotification);
+  return userNotification;
+}
+
+export async function getUserNotifications(userId: string, limit = 50) {
+  const q = query(
+    collection(db, "users", userId, "notifications"),
+    orderBy("createdAt", "desc"),
+    limit(limit)
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(d => d.data() as UserNotification);
+}
+
+export function subscribeToUserNotifications(userId: string, callback: (notifications: UserNotification[]) => void) {
+  const q = query(
+    collection(db, "users", userId, "notifications"),
+    orderBy("createdAt", "desc"),
+    limit(20)
+  );
+  
+  return onSnapshot(q, (snapshot) => {
+    const notifications = snapshot.docs.map(d => d.data() as UserNotification);
+    callback(notifications);
+  });
+}
+
+export async function markNotificationAsRead(userId: string, notificationId: string) {
+  await updateDoc(doc(db, "users", userId, "notifications", notificationId), {
+    isRead: true,
+  });
 } 

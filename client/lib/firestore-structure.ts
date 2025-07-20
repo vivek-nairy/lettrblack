@@ -141,4 +141,34 @@ export interface VideoCallSignal {
   type: 'offer' | 'answer' | 'ice-candidate' | 'join' | 'leave';
   data: any;
   timestamp: number;
+}
+
+// NOTIFICATIONS & CALL EVENTS
+export interface CallEvent {
+  groupId: string;
+  status: 'calling' | 'active' | 'ended';
+  startedBy: string;
+  startedByName: string;
+  groupName: string;
+  timestamp: number;
+  participants: string[];
+}
+
+export interface UserNotification {
+  id: string;
+  userId: string;
+  type: 'call_invite' | 'call_started' | 'call_ended' | 'message' | 'group_update';
+  title: string;
+  body: string;
+  data?: any;
+  isRead: boolean;
+  createdAt: number;
+  expiresAt?: number;
+}
+
+export interface FCMToken {
+  userId: string;
+  token: string;
+  deviceType: 'web' | 'mobile';
+  lastUpdated: number;
 } 

@@ -29,6 +29,9 @@ import { cn } from "../lib/utils";
 import { Group, Message } from "../lib/firestore-structure";
 import { useVideoCall } from "../hooks/useVideoCall";
 import { VideoCallModal } from "../components/VideoCallModal";
+import { subscribeToCallEvents } from "../lib/firestore-utils";
+import { useNotifications } from "../hooks/useNotifications";
+import { useToast } from "../hooks/use-toast";
 
 export function Chat() {
   const { groupId } = useParams<{ groupId: string }>();
@@ -47,7 +50,11 @@ export function Chat() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Video call hook
-  const videoCall = useVideoCall(groupId || "");
+  const videoCall = useVideoCall(groupId || "", group?.name);
+  
+  // Notifications hook
+  const notifications = useNotifications();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!groupId || !firebaseUser) return;
@@ -64,11 +71,32 @@ export function Chat() {
     loadGroup();
 
     // Subscribe to real-time messages
-    const unsubscribe = subscribeToMessages(groupId, (newMessages) => {
+    const unsubscribeMessages = subscribeToMessages(groupId, (newMessages) => {
       setMessages(newMessages as Message[]);
     });
 
-    return () => unsubscribe();
+    // Subscribe to call events
+    const unsubscribeCallEvents = subscribeToCallEvents(groupId, (callEvent) => {
+      if (callEvent && callEvent.status === 'calling' && callEvent.startedBy !== firebaseUser.uid) {
+        // Show incoming call notification
+        toast({
+          title: "Incoming Group Call",
+          description: `${callEvent.startedByName} started a call in ${callEvent.groupName}`,
+          action: {
+            label: "Join",
+            onClick: () => {
+              setShowVideoCall(true);
+              videoCall.startCall();
+            }
+          }
+        });
+      }
+    });
+
+    return () => {
+      unsubscribeMessages();
+      unsubscribeCallEvents();
+    };
   }, [groupId, firebaseUser, navigate]);
 
   useEffect(() => {
