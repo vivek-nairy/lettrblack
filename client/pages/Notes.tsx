@@ -38,7 +38,7 @@ import {
 import { useAuthUser } from "../hooks/useAuthUser";
 import { useToast } from "@/hooks/use-toast";
 import { db, storage } from "@/lib/firebase";
-import { doc, setDoc, deleteDoc } from "firebase/firestore";
+import { doc, setDoc, deleteDoc, query, collection, getDocs } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Note } from "@/lib/firestore-structure";
 import { Button } from "@/components/ui/button";
@@ -89,13 +89,22 @@ export function Notes() {
       await setDoc(testDoc, { timestamp: Date.now() });
       console.log("✅ Firestore connection successful");
       
+      // Test notes collection
+      const notesQuery = query(collection(db, "notes"));
+      const notesSnapshot = await getDocs(notesQuery);
+      console.log("📝 All notes in collection:", notesSnapshot.docs.length);
+      notesSnapshot.docs.forEach(doc => {
+        const data = doc.data();
+        console.log("📝 Note:", { id: doc.id, title: data.title, isPublic: data.isPublic });
+      });
+      
       // Clean up test files
       await deleteDoc(testDoc);
       console.log("✅ Test cleanup completed");
       
       toast({
         title: "Firebase Connection Test",
-        description: "Firestore is working correctly!",
+        description: `Firestore is working! Found ${notesSnapshot.docs.length} notes.`,
       });
     } catch (error) {
       console.error("❌ Firebase connection test failed:", error);
@@ -116,6 +125,8 @@ export function Notes() {
 
     // Subscribe to public notes
     const unsubscribeNotes = subscribeToPublicNotes((notesData) => {
+      console.log("📝 Received notes from Firestore:", notesData);
+      console.log("📝 Number of notes:", notesData.length);
       setNotes(notesData);
       setLoading(false);
     });
@@ -182,6 +193,8 @@ export function Notes() {
       }
     });
 
+    console.log("🔍 Filtered notes:", filtered);
+    console.log("🔍 Filter criteria:", { searchTerm, selectedSubject, priceRange, sortBy });
     setFilteredNotes(filtered);
   }, [notes, searchTerm, selectedSubject, priceRange, sortBy]);
 

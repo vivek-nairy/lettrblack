@@ -306,14 +306,22 @@ export async function getUserPurchases(userId: string) {
 
 // Real-time listeners for marketplace
 export function subscribeToPublicNotes(callback: (notes: Note[]) => void) {
+  console.log("🔍 Setting up subscription to public notes...");
   const q = query(
     collection(db, "notes"), 
     where("isPublic", "==", true),
     orderBy("createdAt", "desc")
   );
   return onSnapshot(q, (snapshot) => {
-    const notes = snapshot.docs.map(d => d.data() as Note);
+    console.log("📝 Firestore snapshot received:", snapshot.docs.length, "documents");
+    const notes = snapshot.docs.map(d => {
+      const data = d.data() as Note;
+      console.log("📝 Note data:", { id: d.id, title: data.title, isPublic: data.isPublic });
+      return data;
+    });
     callback(notes);
+  }, (error) => {
+    console.error("❌ Error in subscribeToPublicNotes:", error);
   });
 }
 
