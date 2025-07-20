@@ -179,10 +179,12 @@ export function VideoCallModal({
                     </div>
                     <p className="text-sm">{participant.userName}</p>
                     <p className="text-xs text-gray-400 mt-1">
-                      {status === 'connected' ? 'Connected' : 
-                       status === 'checking' ? 'Connecting...' :
-                       status === 'failed' ? 'Connection Failed' :
-                       'Connecting...'}
+                      {status === 'connected' ? '✅ Connected' : 
+                       status === 'completed' ? '✅ Connected' :
+                       status === 'checking' ? '🔄 Connecting...' :
+                       status === 'failed' ? '❌ Connection Failed' :
+                       status === 'timeout' ? '⏰ Connection Timeout' :
+                       '🔄 Connecting...'}
                     </p>
                   </div>
                 </div>
