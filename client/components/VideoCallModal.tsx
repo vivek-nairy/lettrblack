@@ -23,6 +23,7 @@ interface VideoCallModalProps {
   isVideoOff: boolean;
   isConnecting: boolean;
   error: string | null;
+  connectionStatus: Map<string, string>;
   onToggleMute: () => void;
   onToggleVideo: () => void;
   onEndCall: () => void;
@@ -38,6 +39,7 @@ export function VideoCallModal({
   isVideoOff,
   isConnecting,
   error,
+  connectionStatus,
   onToggleMute,
   onToggleVideo,
   onEndCall,
@@ -165,19 +167,27 @@ export function VideoCallModal({
           {/* Placeholder for participants without streams */}
           {allParticipants
             .filter(p => !remoteStreams.has(p.userId))
-            .map((participant) => (
-              <div key={participant.userId} className="relative bg-gray-900 rounded-lg overflow-hidden flex items-center justify-center">
-                <div className="text-center text-white">
-                  <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <span className="text-xl font-semibold">
-                      {participant.userName.charAt(0).toUpperCase()}
-                    </span>
+            .map((participant) => {
+              const status = connectionStatus.get(participant.userId);
+              return (
+                <div key={participant.userId} className="relative bg-gray-900 rounded-lg overflow-hidden flex items-center justify-center">
+                  <div className="text-center text-white">
+                    <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-2">
+                      <span className="text-xl font-semibold">
+                        {participant.userName.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <p className="text-sm">{participant.userName}</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {status === 'connected' ? 'Connected' : 
+                       status === 'checking' ? 'Connecting...' :
+                       status === 'failed' ? 'Connection Failed' :
+                       'Connecting...'}
+                    </p>
                   </div>
-                  <p className="text-sm">{participant.userName}</p>
-                  <p className="text-xs text-gray-400 mt-1">Connecting...</p>
                 </div>
-              </div>
-            ))}
+              );
+            })}
         </div>
       </div>
 

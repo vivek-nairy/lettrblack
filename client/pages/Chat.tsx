@@ -558,6 +558,7 @@ export function Chat() {
         isVideoOff={videoCall.isVideoOff}
         isConnecting={videoCall.isConnecting}
         error={videoCall.error}
+        connectionStatus={videoCall.connectionStatus}
         onToggleMute={videoCall.toggleMute}
         onToggleVideo={videoCall.toggleVideo}
         onEndCall={() => {
