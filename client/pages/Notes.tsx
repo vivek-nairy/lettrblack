@@ -247,7 +247,14 @@ export function Notes() {
           const fileRef = ref(storage, `notes/${fileName}`);
           
           console.log("📤 Starting file upload to Firebase Storage...");
-          const uploadResult = await uploadBytes(fileRef, noteData.file);
+          
+          // Add timeout to fail quickly if CORS issues
+          const uploadPromise = uploadBytes(fileRef, noteData.file);
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("Upload timeout - CORS likely blocked")), 5000)
+          );
+          
+          const uploadResult = await Promise.race([uploadPromise, timeoutPromise]);
           console.log("✅ File upload completed:", uploadResult);
           
           console.log("🔗 Getting download URL...");
@@ -255,18 +262,29 @@ export function Notes() {
           console.log("✅ File URL obtained:", fileUrl);
         } catch (storageError) {
           console.warn("⚠️ Firebase Storage upload failed, falling back to data URL:", storageError);
+          console.log("📏 File size:", noteData.file.size, "bytes");
+          console.log("📏 Max fallback size:", 500000, "bytes");
+          console.log("📏 Can use fallback:", noteData.file.size < 500000);
           
           // Fallback to data URL for small files
           if (noteData.file.size < 500000) { // Only for files under 500KB
+            console.log("🔄 Creating fallback data URL...");
             const tempFileUrl = await new Promise((resolve, reject) => {
               const reader = new FileReader();
-              reader.onload = () => resolve(reader.result);
-              reader.onerror = reject;
+              reader.onload = () => {
+                console.log("✅ FileReader completed");
+                resolve(reader.result);
+              };
+              reader.onerror = (error) => {
+                console.error("❌ FileReader error:", error);
+                reject(error);
+              };
               reader.readAsDataURL(noteData.file);
             });
             
             fileUrl = tempFileUrl as string;
             console.log("✅ Fallback data URL created for small file");
+            console.log("🔗 Data URL length:", fileUrl.length);
           } else {
             throw new Error("File too large for fallback storage. Please try a smaller file or configure Firebase Storage CORS.");
           }
