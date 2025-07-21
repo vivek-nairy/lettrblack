@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuthUser } from "../hooks/useAuthUser";
-import { sendMessage, subscribeToMessages } from "../lib/firestore-utils";
+import { sendMessage, subscribeToMessages, addXpToUser } from "../lib/firestore-utils";
 import { storage } from "../lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Button } from "./ui/button";
@@ -105,6 +105,7 @@ export function GroupChat({
         fileName,
         fileType,
       });
+      await addXpToUser(firebaseUser.uid, 1, 'post_message', 10);
 
       setNewMessage("");
       setSelectedFile(null);

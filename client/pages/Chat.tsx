@@ -33,6 +33,7 @@ import { subscribeToCallEvents } from "../lib/firestore-utils";
 import { useNotifications } from "../hooks/useNotifications";
 import { useToast } from "../hooks/use-toast";
 import { ToastAction } from '@/components/ui/toast';
+import { addXpToUser } from "../lib/firestore-utils";
 
 export function Chat() {
   const { groupId } = useParams<{ groupId: string }>();
@@ -131,6 +132,7 @@ export function Chat() {
         fileName,
         fileType,
       });
+      await addXpToUser(firebaseUser.uid, 1, 'post_message', 10);
 
       setNewMessage("");
       setSelectedFile(null);
