@@ -1,21 +1,8 @@
 [
   {
-    "origin": [
-      "https://jovial-sable-9ffc51.netlify.app",
-      "http://localhost:3000",
-      "http://localhost:8080",
-      "http://localhost:8081",
-      "http://localhost:8082",
-      "http://localhost:5173"
-    ],
-    "method": ["GET", "POST", "PUT", "DELETE", "HEAD"],
+    "origin": ["https://jovial-sable-9ffc51.netlify.app"],
+    "method": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     "maxAgeSeconds": 3600,
-    "responseHeader": [
-      "Content-Type",
-      "Authorization",
-      "Content-Length",
-      "User-Agent",
-      "x-goog-resumable"
-    ]
+    "responseHeader": ["Content-Type", "Authorization", "x-goog-meta-*"]
   }
 ] 
