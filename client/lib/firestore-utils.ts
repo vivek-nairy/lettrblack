@@ -290,6 +290,18 @@ export async function purchaseNote(noteId: string, buyerId: string, amount: numb
       purchases: arrayUnion(buyerId)
     })
   ]);
+  // Award XP to buyer and seller
+  try {
+    await addXpToUser(buyerId, 3, 'purchase_item', 30);
+    // Get sellerId from note
+    const noteSnap = await getDoc(noteRef);
+    if (noteSnap.exists()) {
+      const note = noteSnap.data();
+      if (note.authorId) {
+        await addXpToUser(note.authorId, 10, 'note_sold', 100);
+      }
+    }
+  } catch (e) { /* ignore XP errors */ }
   
   return purchase;
 }

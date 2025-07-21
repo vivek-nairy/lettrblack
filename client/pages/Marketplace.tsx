@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { UploadModal } from "@/components/UploadModal";
 import { useAuthUser } from "../hooks/useAuthUser";
 import { useToast } from "@/hooks/use-toast";
+import { addXpToUser } from "../lib/firestore-utils";
 
 const subjects = [
   "Physics", "Chemistry", "Biology", "Mathematics", "English", 
@@ -131,6 +132,7 @@ export default function Marketplace() {
         downloads: 0,
       };
       setNotes((prev) => [newNote, ...prev]);
+      await addXpToUser(firebaseUser.uid, 5, 'upload_note', 20);
       toast({ title: "Upload successful!", description: "Your content is now in the marketplace." });
     } catch (error) {
       toast({ title: "Upload failed", description: error.message, variant: "destructive" });
