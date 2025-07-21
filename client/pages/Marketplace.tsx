@@ -10,12 +10,16 @@ import {
   CheckCircle,
   Star,
   BookOpen,
-  Sparkles
+  Sparkles,
+  Plus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { db } from "@/lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
+import { UploadModal } from "@/components/UploadModal";
+import { useAuthUser } from "../hooks/useAuthUser";
+import { useToast } from "@/hooks/use-toast";
 
 const subjects = [
   "Physics", "Chemistry", "Biology", "Mathematics", "English", 
@@ -35,6 +39,8 @@ const sortOptions = [
 ];
 
 export default function Marketplace() {
+  const { user, firebaseUser } = useAuthUser();
+  const { toast } = useToast();
   const [notes, setNotes] = useState([]);
   const [filteredNotes, setFilteredNotes] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -42,6 +48,8 @@ export default function Marketplace() {
   const [priceRange, setPriceRange] = useState({ min: 0, max: 1000 });
   const [sortBy, setSortBy] = useState("newest");
   const [loading, setLoading] = useState(true);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     getDocs(collection(db, "notes")).then((snap) => {
@@ -101,6 +109,49 @@ export default function Marketplace() {
     }
   };
 
+  // Upload handler
+  const handleUpload = async (noteData) => {
+    if (!firebaseUser) {
+      toast({ title: "Authentication required", description: "Please sign in to upload.", variant: "destructive" });
+      return;
+    }
+    setIsUploading(true);
+    try {
+      // Simulate upload to Firebase (replace with actual upload logic)
+      // You may want to use Firebase Storage for files and Firestore for metadata
+      // For now, just add to local state
+      const newNote = {
+        ...noteData,
+        id: Date.now().toString(),
+        author: { name: user?.name || firebaseUser.email || "Anonymous" },
+        price: noteData.price || 0,
+        category: noteData.category || "Notes",
+        createdAt: Date.now(),
+        views: 0,
+        downloads: 0,
+      };
+      setNotes((prev) => [newNote, ...prev]);
+      toast({ title: "Upload successful!", description: "Your content is now in the marketplace." });
+    } catch (error) {
+      toast({ title: "Upload failed", description: error.message, variant: "destructive" });
+    } finally {
+      setIsUploading(false);
+      setShowUploadModal(false);
+    }
+  };
+
+  // Download/Buy handler
+  const handleDownloadOrBuy = (note) => {
+    if (note.price === 0) {
+      // Direct download (simulate)
+      toast({ title: "Download started", description: `Downloading ${note.title}` });
+      // TODO: Implement actual download logic
+    } else {
+      // Placeholder payment flow
+      toast({ title: "Payment required", description: "Payment flow coming soon!" });
+    }
+  };
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -112,6 +163,14 @@ export default function Marketplace() {
             <p className="text-muted-foreground">
               Buy and sell high-quality study notes, video courses, and more.
             </p>
+          </div>
+          <div className="flex items-center gap-3">
+            {firebaseUser && (
+              <Button onClick={() => setShowUploadModal(true)} className="lettrblack-button flex items-center gap-2">
+                <Plus className="w-4 h-4" />
+                Upload Content
+              </Button>
+            )}
           </div>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
@@ -176,108 +235,99 @@ export default function Marketplace() {
           </div>
         ) : filteredNotes.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredNotes.map((note) => {
-              const canDownload = note.price === 0;
-              return (
-                <div
-                  key={note.id}
-                  className="lettrblack-card group hover:scale-[1.02] transition-all duration-200 cursor-pointer"
-                >
-                  <div className="relative h-48 mb-4">
-                    {note.coverImageUrl && (
-                      <img
-                        src={note.coverImageUrl}
-                        alt={note.title}
-                        className="w-full h-full object-cover rounded-t-lg"
-                      />
+            {filteredNotes.map((note) => (
+              <div key={note.id} className="lettrblack-card group hover:scale-[1.02] transition-all duration-200 cursor-pointer">
+                <div className="relative h-48 mb-4 flex items-center justify-center bg-muted rounded-t-lg">
+                  {/* Thumbnail preview */}
+                  {note.coverImageUrl ? (
+                    <img src={note.coverImageUrl} alt={note.title} className="w-full h-full object-cover rounded-t-lg" />
+                  ) : (
+                    <BookOpen className="w-12 h-12 text-muted-foreground" />
+                  )}
+                  <div className="absolute top-3 right-3">
+                    {note.price > 0 ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-primary/90 text-primary-foreground rounded-full text-sm font-medium">
+                        <DollarSign className="w-3 h-3" />
+                        ₹{note.price}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-500/90 text-white rounded-full text-sm font-medium">
+                        <CheckCircle className="w-3 h-3" />
+                        Free
+                      </span>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-t-lg" />
-                    <div className="absolute top-3 right-3">
-                      {note.price > 0 ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-primary/90 text-primary-foreground rounded-full text-sm font-medium">
-                          <DollarSign className="w-3 h-3" />
-                          ₹{note.price}
+                  </div>
+                </div>
+                <div className="p-4">
+                  <div className="flex items-start gap-3 mb-3">
+                    <BookOpen className="w-5 h-5 text-blue-500" />
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-foreground text-lg leading-tight line-clamp-2">
+                        {note.title}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {note.subject || note.category}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        by {note.author?.name || "Unknown"}
+                      </p>
+                    </div>
+                  </div>
+                  {note.description && (
+                    <p className="text-muted-foreground mb-3 line-clamp-2 text-sm">
+                      {note.description}
+                    </p>
+                  )}
+                  {note.tags && note.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {note.tags.slice(0, 3).map((tag) => (
+                        <span key={tag} className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
+                          <Tag className="w-3 h-3" />
+                          {tag}
                         </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-500/90 text-white rounded-full text-sm font-medium">
-                          <CheckCircle className="w-3 h-3" />
-                          Free
+                      ))}
+                      {note.tags.length > 3 && (
+                        <span className="text-xs text-muted-foreground">
+                          +{note.tags.length - 3} more
                         </span>
                       )}
                     </div>
-                  </div>
-                  <div className="p-4">
-                    <div className="flex items-start gap-3 mb-3">
-                      <BookOpen className="w-5 h-5 text-blue-500" />
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-foreground text-lg leading-tight line-clamp-2">
-                          {note.title}
-                        </h3>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {note.subject}
-                        </p>
+                  )}
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-1">
+                        <Eye className="w-3 h-3" />
+                        {note.views}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Download className="w-3 h-3" />
+                        {note.downloads}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {formatTimeAgo(note.createdAt)}
                       </div>
                     </div>
-                    {note.description && (
-                      <p className="text-muted-foreground mb-3 line-clamp-2 text-sm">
-                        {note.description}
-                      </p>
-                    )}
-                    {note.tags && note.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mb-3">
-                        {note.tags.slice(0, 3).map((tag) => (
-                          <span
-                            key={tag}
-                            className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium"
-                          >
-                            <Tag className="w-3 h-3" />
-                            {tag}
-                          </span>
-                        ))}
-                        {note.tags.length > 3 && (
-                          <span className="text-xs text-muted-foreground">
-                            +{note.tags.length - 3} more
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-1">
-                          <Eye className="w-3 h-3" />
-                          {note.views}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Download className="w-3 h-3" />
-                          {note.downloads}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {formatTimeAgo(note.createdAt)}
-                        </div>
-                      </div>
-                      <div>
-                        {canDownload ? (
-                          <Button size="sm" className="ml-2">Download</Button>
-                        ) : (
-                          <Button size="sm" className="ml-2" variant="secondary">Buy Now</Button>
-                        )}
-                      </div>
+                    <div>
+                      <Button size="sm" className="ml-2" onClick={() => handleDownloadOrBuy(note)}>
+                        {note.price === 0 ? "Download" : "Buy"}
+                      </Button>
                     </div>
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         ) : (
           <div className="text-center py-12">
             <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">No notes found</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-2">No content found</h3>
             <p className="text-muted-foreground">
-              Try adjusting your search criteria or upload the first note!
+              Try adjusting your search criteria or upload the first item!
             </p>
           </div>
         )}
+        <UploadModal isOpen={showUploadModal} onClose={() => setShowUploadModal(false)} onUpload={handleUpload} />
       </div>
     </Layout>
   );
