@@ -13,7 +13,7 @@ import { Chat } from "./pages/Chat";
 import { Notes } from "./pages/Notes";
 import { XP } from "./pages/XP";
 import { Leaderboard } from "./pages/Leaderboard";
-import { Marketplace } from "./pages/Marketplace";
+import Marketplace from "./pages/Marketplace";
 import { Profile } from "./pages/Profile";
 import { Upgrade } from "./pages/Upgrade";
 import { SignInPage } from "./pages/SignInPage";
