@@ -1,3 +1,4 @@
+import React from "react";
 import { useEffect, useState } from "react";
 import { Layout } from "@/components/Layout";
 import {
@@ -31,6 +32,7 @@ export function Profile() {
     name: "",
     bio: "",
   });
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
 
   useEffect(() => {
     if (firebaseUser) {
@@ -64,34 +66,39 @@ export function Profile() {
     setEditData({ ...editData, [e.target.name]: e.target.value });
   };
 
-  const handleAvatarChange = async (e: any) => {
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!firebaseUser) return;
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
+    setUploadProgress(0);
     try {
       const avatarRef = ref(storage, `users/${firebaseUser.uid}/profile.jpg`);
       const uploadTask = uploadBytesResumable(avatarRef, file);
-      uploadTask.on('state_changed',
+      uploadTask.on(
+        "state_changed",
         (snapshot) => {
-          // Optionally, you can show progress here
+          const percent = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          setUploadProgress(percent);
         },
         (error) => {
           setUploading(false);
-          alert('Upload failed: ' + error.message);
+          setUploadProgress(0);
+          alert("Upload failed: " + error.message);
         },
         async () => {
-          const url = await getDownloadURL(avatarRef);
+          const url = await getDownloadURL(uploadTask.snapshot.ref);
           setEditData((prev) => ({ ...prev, avatarUrl: url }));
-          // Update Firestore profileImage
-          await updateUser(firebaseUser.uid, { profileImage: url });
+          await updateUser(firebaseUser.uid, { avatarUrl: url });
           setUploading(false);
-          alert('Profile picture updated!');
+          setUploadProgress(100);
+          setProfile((prev: any) => prev ? { ...prev, avatarUrl: url } : prev);
         }
       );
-    } catch (error) {
+    } catch (error: any) {
       setUploading(false);
-      alert('Upload failed: ' + error.message);
+      setUploadProgress(0);
+      alert("Upload failed: " + error.message);
     }
   };
 
@@ -151,7 +158,7 @@ export function Profile() {
             <div className="flex flex-col items-center lg:items-start">
               <div className="relative">
                 <img
-                  src={user?.avatarUrl || firebaseUser?.photoURL || "/placeholder.svg"}
+                  src={profile?.avatarUrl || user?.avatarUrl || firebaseUser?.photoURL || "/placeholder.svg"}
                   alt={user?.name || firebaseUser?.displayName || "User"}
                   className="w-32 h-32 rounded-2xl object-cover border-4 border-primary/20"
                 />
@@ -490,14 +497,24 @@ export function Profile() {
                   onChange={handleAvatarChange}
                   className="block w-full text-sm text-primary-foreground border border-border rounded-lg cursor-pointer bg-primary/5 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
                 />
-                {uploading && <p className="text-sm text-muted-foreground mt-2">Uploading...</p>}
+                {uploading && (
+                  <div className="mt-2">
+                    <p className="text-sm text-muted-foreground">Uploading...</p>
+                    <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                      <div
+                        className="bg-primary h-2 rounded-full"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="flex flex-col items-center gap-2 mb-4">
                 {editData.avatarUrl && (
                   <img
                     src={editData.avatarUrl}
                     alt="Avatar Preview"
-                    className="w-24 h-24 rounded-full object-cover border-2 border-primary"
+                    className="w-24 h-24 object-cover rounded mx-auto"
                   />
                 )}
               </div>
