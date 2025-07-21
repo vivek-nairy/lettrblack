@@ -84,6 +84,15 @@ export function Profile() {
         (error) => {
           setUploading(false);
           setUploadProgress(0);
+          // Detailed error log
+          console.error("❌ Error uploading avatar:", error);
+          if (error && typeof error === 'object') {
+            console.error("❌ Error details:", {
+              message: error.message,
+              code: error.code,
+              stack: error.stack
+            });
+          }
           alert("Upload failed: " + error.message);
         },
         async () => {
@@ -98,6 +107,15 @@ export function Profile() {
     } catch (error: any) {
       setUploading(false);
       setUploadProgress(0);
+      // Detailed error log
+      console.error("❌ Error uploading avatar:", error);
+      if (error && typeof error === 'object') {
+        console.error("❌ Error details:", {
+          message: error.message,
+          code: error.code,
+          stack: error.stack
+        });
+      }
       alert("Upload failed: " + error.message);
     }
   };
