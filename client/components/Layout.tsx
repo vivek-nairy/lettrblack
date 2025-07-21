@@ -24,7 +24,6 @@ interface LayoutProps {
 const sidebarItems = [
   { name: "Home", href: "/", icon: Home },
   { name: "My Groups", href: "/groups", icon: Users },
-  { name: "Notes", href: "/notes", icon: BookOpen },
   { name: "XP", href: "/xp", icon: Trophy },
   { name: "Leaderboard", href: "/leaderboard", icon: Crown },
   { name: "Marketplace", href: "/marketplace", icon: Store },
