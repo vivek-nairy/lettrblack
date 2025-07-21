@@ -302,11 +302,18 @@ export function Groups() {
             {filteredGroups.map((group) => (
               <div
                 key={group.id}
+                tabIndex={0}
+                role="button"
+                aria-label={`Open group ${group.name}`}
                 className={cn(
                   "group relative bg-gradient-to-br",
                   group.color,
-                  "border border-border rounded-xl p-0 hover:scale-[1.02] transition-all duration-300 backdrop-blur-sm overflow-hidden",
+                  "border border-border rounded-xl p-0 transition-all duration-300 backdrop-blur-sm overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer select-none",
+                  "hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]",
                 )}
+                onClick={() => navigate(`/chat/${group.id}`)}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') navigate(`/chat/${group.id}`); }}
+                style={{ WebkitTapHighlightColor: 'transparent' }}
               >
                 {/* Banner Image */}
                 {group.bannerUrl && (
@@ -417,24 +424,19 @@ export function Groups() {
 
                   {/* Actions */}
                   <div className="flex gap-3">
-                    {group.memberIds?.includes(firebaseUser?.uid) ? (
+                    {!group.memberIds?.includes(firebaseUser?.uid) && (
                       <button
-                        onClick={() => navigate(`/chat/${group.id}`)}
-                        className="flex-1 lettrblack-button flex items-center justify-center gap-2"
-                      >
-                        <Play className="w-4 h-4" />
-                        Enter Group
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleJoinGroup(group)}
+                        onClick={e => { e.stopPropagation(); handleJoinGroup(group); }}
                         className="flex-1 bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors duration-200 rounded-lg flex items-center justify-center gap-2"
                       >
                         <Users className="w-4 h-4" />
                         Join Group
                       </button>
                     )}
-                    <button className="px-4 py-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors duration-200 rounded-lg">
+                    <button
+                      onClick={e => e.stopPropagation()}
+                      className="px-4 py-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors duration-200 rounded-lg"
+                    >
                       <Calendar className="w-4 h-4" />
                     </button>
                   </div>
