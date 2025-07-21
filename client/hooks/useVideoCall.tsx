@@ -320,4 +320,56 @@ export function useVideoCall(groupId: string, groupName?: string) {
             );
             
             newParticipants.forEach(participant => {
-              console.log(`
+              // (removed unterminated string)
+            });
+          }
+        }
+      });
+
+      setState(prev => ({ ...prev, isInCall: true }));
+      console.log('✅ Video call started successfully');
+    } catch (error) {
+      console.error('❌ Failed to start video call:', error);
+      setState(prev => ({ ...prev, error: 'Failed to start video call. Please try again.' }));
+    }
+  }, [groupId, groupName, firebaseUser, state.isInCall, state.isConnecting]);
+
+  // Leave video call
+  const leaveCall = useCallback(async () => {
+    if (!firebaseUser) return;
+
+    console.log('🚪 Leaving video call...');
+    setState(prev => ({ ...prev, isInCall: false, isConnecting: false }));
+
+    try {
+      await leaveVideoCall(groupId, firebaseUser.uid);
+      console.log('✅ Left video call successfully');
+    } catch (error) {
+      console.error('❌ Failed to leave video call:', error);
+      setState(prev => ({ ...prev, error: 'Failed to leave video call. Please try again.' }));
+    }
+  }, [groupId, firebaseUser]);
+
+  // Clean up WebRTC peer connections and subscriptions
+  useEffect(() => {
+    return () => {
+      if (unsubscribeSignals.current) {
+        unsubscribeSignals.current();
+      }
+      if (unsubscribeVideoCall.current) {
+        unsubscribeVideoCall.current();
+      }
+      peerConnections.current.forEach(pc => pc.close());
+      peerConnections.current.clear();
+      localStreamRef.current?.getTracks().forEach(track => track.stop());
+      localStreamRef.current = null;
+      setState(prev => ({ ...prev, localStream: null, remoteStreams: new Map() }));
+    };
+  }, [groupId]);
+
+  return {
+    state,
+    startCall,
+    leaveCall,
+  };
+}
