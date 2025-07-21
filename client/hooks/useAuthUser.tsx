@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { getUser } from "@/lib/firestore-utils";
+import { getUser, updateStreakOnLogin, addXpToUser } from "@/lib/firestore-utils";
 import type { User } from "@/lib/firestore-structure";
 
 export function useAuthUser() {
@@ -18,6 +18,11 @@ export function useAuthUser() {
           // Get user data from Firestore
           const userData = await getUser(firebaseUser.uid);
           setUser(userData);
+          // Update streak and award streak bonus XP if streak >= 3
+          const streak = await updateStreakOnLogin(firebaseUser.uid);
+          if (streak >= 3) {
+            await addXpToUser(firebaseUser.uid, 15, 'streak_bonus', 15);
+          }
         } catch (error) {
           console.error("Error fetching user data:", error);
           setUser(null);
