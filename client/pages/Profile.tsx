@@ -6,7 +6,7 @@ import {
 import { cn } from "@/lib/utils";
 import { getNotesByUser, getProgressByUser, getUser, updateUser, getGroupsByUser } from "@/lib/firestore-utils";
 import { storage } from "@/lib/firebase";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { useAuthUser } from "../hooks/useAuthUser";
 import { useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
@@ -69,11 +69,30 @@ export function Profile() {
     const file = e.target.files[0];
     if (!file) return;
     setUploading(true);
-    const avatarRef = ref(storage, `avatars/${firebaseUser.uid}`);
-    await uploadBytes(avatarRef, file);
-    const url = await getDownloadURL(avatarRef);
-    setEditData((prev) => ({ ...prev, avatarUrl: url }));
-    setUploading(false);
+    try {
+      const avatarRef = ref(storage, `users/${firebaseUser.uid}/profile.jpg`);
+      const uploadTask = uploadBytesResumable(avatarRef, file);
+      uploadTask.on('state_changed',
+        (snapshot) => {
+          // Optionally, you can show progress here
+        },
+        (error) => {
+          setUploading(false);
+          alert('Upload failed: ' + error.message);
+        },
+        async () => {
+          const url = await getDownloadURL(avatarRef);
+          setEditData((prev) => ({ ...prev, avatarUrl: url }));
+          // Update Firestore profileImage
+          await updateUser(firebaseUser.uid, { profileImage: url });
+          setUploading(false);
+          alert('Profile picture updated!');
+        }
+      );
+    } catch (error) {
+      setUploading(false);
+      alert('Upload failed: ' + error.message);
+    }
   };
 
   const handleEditSave = async () => {

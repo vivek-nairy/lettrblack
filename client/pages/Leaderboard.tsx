@@ -219,14 +219,23 @@ export function Leaderboard() {
                             "from-orange-400 to-orange-600 shadow-xl shadow-orange-400/20",
                         )}
                       >
-                        <img
-                          src={user.avatar}
-                          alt={user.name}
-                          className={cn(
-                            "rounded-full object-cover",
-                            isWinner ? "w-24 h-24" : "w-20 h-20",
-                          )}
-                        />
+                        {user.profileImage ? (
+                          <img
+                            src={user.profileImage}
+                            alt={user.name}
+                            className={cn(
+                              "rounded-full object-cover",
+                              isWinner ? "w-24 h-24" : "w-20 h-20",
+                            )}
+                          />
+                        ) : (
+                          <div className={cn(
+                            "bg-purple-500 flex items-center justify-center text-white font-bold",
+                            isWinner ? "w-24 h-24 rounded-full text-4xl" : "w-20 h-20 rounded-full text-3xl"
+                          )}>
+                            {user.name?.charAt(0) || '?'}
+                          </div>
+                        )}
                       </div>
                       {/* Rank badge */}
                       <div
@@ -387,11 +396,17 @@ export function Leaderboard() {
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-3">
-                        <img
-                          src={user.avatar}
-                          alt={user.name}
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
+                        {user.profileImage ? (
+                          <img
+                            src={user.profileImage}
+                            alt={user.name}
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="bg-purple-500 w-10 h-10 rounded-full flex items-center justify-center text-white font-bold">
+                            {user.name?.charAt(0) || '?'}
+                          </div>
+                        )}
                         <div>
                           <h3
                             className={cn(
