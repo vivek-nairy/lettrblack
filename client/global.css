@@ -90,3 +90,90 @@
     @apply h-full bg-gradient-to-r from-primary to-accent transition-all duration-300;
   }
 }
+
+/* --- Mobile Responsive Enhancements --- */
+@media (max-width: 768px) {
+  .lettrblack-card {
+    padding: 1rem !important;
+    border-radius: 0.75rem !important;
+    box-shadow: 0 2px 8px 0 rgba(0,0,0,0.10) !important;
+  }
+  .lettrblack-button {
+    width: 100%;
+    padding: 0.75rem 1rem !important;
+    font-size: 1rem !important;
+    border-radius: 0.75rem !important;
+  }
+  .lettrblack-sidebar-item {
+    padding: 0.75rem 1rem !important;
+    font-size: 1rem !important;
+    gap: 0.75rem !important;
+  }
+  .lettrblack-xp-bar {
+    height: 1.25rem !important;
+  }
+  .lettrblack-xp-fill {
+    height: 1.25rem !important;
+  }
+  .p-6 {
+    padding: 1rem !important;
+  }
+  .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 1.25rem !important;
+  }
+  .text-3xl {
+    font-size: 1.5rem !important;
+    line-height: 2rem !important;
+  }
+  .text-lg {
+    font-size: 1.125rem !important;
+    line-height: 1.75rem !important;
+  }
+  .text-sm {
+    font-size: 0.95rem !important;
+  }
+  .grid-cols-2, .md\:grid-cols-2, .lg\:grid-cols-3, .xl\:grid-cols-4 {
+    grid-template-columns: 1fr !important;
+  }
+  .flex-row, .md\:flex-row, .lg\:flex-row {
+    flex-direction: column !important;
+  }
+  .gap-4, .gap-6, .gap-8 {
+    gap: 1rem !important;
+  }
+  .rounded-xl {
+    border-radius: 0.75rem !important;
+  }
+  .h-48 {
+    height: 10rem !important;
+  }
+  .w-96 {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  .px-6, .py-4 {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+  }
+  .input, .textarea, input, textarea {
+    font-size: 1rem !important;
+    padding: 0.75rem 1rem !important;
+  }
+  .max-w-2xl {
+    max-width: 95vw !important;
+  }
+  .h-8, .h-12 {
+    height: 2rem !important;
+  }
+  .w-8, .w-12 {
+    width: 2rem !important;
+  }
+  .rounded {
+    border-radius: 0.5rem !important;
+  }
+  .flex.items-center.gap-4 {
+    gap: 0.75rem !important;
+  }
+}
