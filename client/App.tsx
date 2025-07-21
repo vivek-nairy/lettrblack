@@ -10,7 +10,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Index } from "./pages/Index";
 import { Groups } from "./pages/Groups";
 import { Chat } from "./pages/Chat";
-import { Notes } from "./pages/Notes";
 import { XP } from "./pages/XP";
 import { Leaderboard } from "./pages/Leaderboard";
 import Marketplace from "./pages/Marketplace";
@@ -99,11 +98,6 @@ const App = () => {
             <Route path="/chat/:groupId" element={
               <AuthWrapper>
                 <Chat />
-              </AuthWrapper>
-            } />
-            <Route path="/notes" element={
-              <AuthWrapper>
-                <Notes />
               </AuthWrapper>
             } />
             <Route path="/xp" element={
