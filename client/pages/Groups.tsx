@@ -40,6 +40,8 @@ const initialModalState = {
   description: "",
   image: null,
   imageUrl: "",
+  banner: null,
+  bannerUrl: "",
   error: "",
   loading: false,
 };
@@ -107,18 +109,24 @@ export function Groups() {
         await uploadBytes(fileRef, modal.image);
         groupImageUrl = await getDownloadURL(fileRef);
       }
+      let bannerUrl = "";
+      if (modal.banner) {
+        const bannerRef = ref(storage, `group-banners/${firebaseUser.uid}_${Date.now()}_${modal.banner.name}`);
+        await uploadBytes(bannerRef, modal.banner);
+        bannerUrl = await getDownloadURL(bannerRef);
+      }
       const newGroup = {
         name: modal.name.trim(),
         subject: modal.subject.trim(),
         description: modal.description.trim(),
-        bannerUrl: groupImageUrl, // Keep bannerUrl for backward compatibility
-        groupImageUrl, // Add new field for group image
+        bannerUrl, // Save banner image URL
+        groupImageUrl, // Save group image URL
         id: crypto.randomUUID(),
         ownerId: firebaseUser.uid,
         memberIds: [firebaseUser.uid],
         inviteCode: Math.random().toString(36).substring(2, 8),
         createdAt: Date.now(),
-        isPrivate: false, // Default to public
+        isPrivate: false,
       };
       await createGroup(newGroup);
       await addXpToUser(firebaseUser.uid, 50, "create_group", 50);
@@ -290,137 +298,146 @@ export function Groups() {
 
         {/* Groups Grid */}
         {filteredGroups.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="flex flex-col gap-6">
             {filteredGroups.map((group) => (
               <div
                 key={group.id}
                 className={cn(
                   "group relative bg-gradient-to-br",
                   group.color,
-                  "border border-border rounded-xl p-6 hover:scale-[1.02] transition-all duration-300 backdrop-blur-sm",
+                  "border border-border rounded-xl p-0 hover:scale-[1.02] transition-all duration-300 backdrop-blur-sm overflow-hidden",
                 )}
               >
-                {/* Active Indicator */}
-                {group.isActive && (
-                  <div className="absolute top-4 right-4">
-                    <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                {/* Banner Image */}
+                {group.bannerUrl && (
+                  <div className="w-full h-32 md:h-40 bg-muted">
+                    <img src={group.bannerUrl} alt="Group Banner" className="w-full h-full object-cover" />
                   </div>
                 )}
-
-                {/* Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div
-                        className={cn(
-                          "w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden",
-                          group.bgAccent,
-                        )}
-                      >
-                        {group.groupImageUrl ? (
-                          <img 
-                            src={group.groupImageUrl} 
-                            alt={group.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <BookOpen className="w-5 h-5 text-white" />
-                        )}
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-foreground text-lg">
-                          {group.name}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          {group.subject}
-                        </p>
-                      </div>
+                {/* Card Content */}
+                <div className="p-6">
+                  {/* Active Indicator */}
+                  {group.isActive && (
+                    <div className="absolute top-4 right-4">
+                      <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      {group.description}
-                    </p>
+                  )}
+
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div
+                          className={cn(
+                            "w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden",
+                            group.bgAccent,
+                          )}
+                        >
+                          {group.groupImageUrl ? (
+                            <img 
+                              src={group.groupImageUrl} 
+                              alt={group.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <BookOpen className="w-5 h-5 text-white" />
+                          )}
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-foreground text-lg">
+                            {group.name}
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            {group.subject}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        {group.description}
+                      </p>
+                    </div>
+
+                    <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                      <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                    </button>
                   </div>
 
-                  <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                    <MoreVertical className="w-4 h-4 text-muted-foreground" />
-                  </button>
-                </div>
-
-                {/* XP Progress */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Trophy className={cn("w-4 h-4", group.accentColor)} />
-                      <span className="text-sm font-medium text-foreground">
-                        Level {group.currentLevel}
+                  {/* XP Progress */}
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Trophy className={cn("w-4 h-4", group.accentColor)} />
+                        <span className="text-sm font-medium text-foreground">
+                          Level {group.currentLevel}
+                        </span>
+                      </div>
+                      <span className="text-sm text-muted-foreground">
+                        {group.xp} / {group.nextLevelXp} XP
                       </span>
                     </div>
-                    <span className="text-sm text-muted-foreground">
-                      {group.xp} / {group.nextLevelXp} XP
-                    </span>
+                    <div className="lettrblack-xp-bar h-2">
+                      <div
+                        className="lettrblack-xp-fill h-full transition-all duration-500"
+                        style={{
+                          width: `${calculateProgress(group.xp, group.nextLevelXp)}%`,
+                        }}
+                      ></div>
+                    </div>
                   </div>
-                  <div className="lettrblack-xp-bar h-2">
-                    <div
-                      className="lettrblack-xp-fill h-full transition-all duration-500"
-                      style={{
-                        width: `${calculateProgress(group.xp, group.nextLevelXp)}%`,
-                      }}
-                    ></div>
-                  </div>
-                </div>
 
-                {/* Members */}
-                <div className="flex items-center gap-3">
-                  <div className="flex -space-x-2">
-                    {(group.avatars || []).slice(0, 4).map((avatar, index) => (
-                      <img
-                        key={index}
-                        src={avatar}
-                        alt={`Member ${index + 1}`}
-                        className="w-8 h-8 rounded-full border-2 border-background object-cover"
-                      />
-                    ))}
-                    {group.members && group.members > 4 && (
-                      <div className="w-8 h-8 rounded-full bg-muted border-2 border-background flex items-center justify-center text-xs font-medium text-foreground">
-                        +{group.members - 4}
-                      </div>
+                  {/* Members */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex -space-x-2">
+                      {(group.avatars || []).slice(0, 4).map((avatar, index) => (
+                        <img
+                          key={index}
+                          src={avatar}
+                          alt={`Member ${index + 1}`}
+                          className="w-8 h-8 rounded-full border-2 border-background object-cover"
+                        />
+                      ))}
+                      {group.members && group.members > 4 && (
+                        <div className="w-8 h-8 rounded-full bg-muted border-2 border-background flex items-center justify-center text-xs font-medium text-foreground">
+                          +{group.members - 4}
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Users className="w-4 h-4" />
+                        {(group.members || 1)}/{group.maxMembers || 1} members
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Clock className="w-3 h-3" />
+                    {group.lastActivity || "No recent activity"}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-3">
+                    {group.memberIds?.includes(firebaseUser?.uid) ? (
+                      <button
+                        onClick={() => navigate(`/chat/${group.id}`)}
+                        className="flex-1 lettrblack-button flex items-center justify-center gap-2"
+                      >
+                        <Play className="w-4 h-4" />
+                        Enter Group
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleJoinGroup(group)}
+                        className="flex-1 bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors duration-200 rounded-lg flex items-center justify-center gap-2"
+                      >
+                        <Users className="w-4 h-4" />
+                        Join Group
+                      </button>
                     )}
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Users className="w-4 h-4" />
-                      {(group.members || 1)}/{group.maxMembers || 1} members
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Clock className="w-3 h-3" />
-                  {group.lastActivity || "No recent activity"}
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-3">
-                  {group.memberIds?.includes(firebaseUser?.uid) ? (
-                    <button
-                      onClick={() => navigate(`/chat/${group.id}`)}
-                      className="flex-1 lettrblack-button flex items-center justify-center gap-2"
-                    >
-                      <Play className="w-4 h-4" />
-                      Enter Group
+                    <button className="px-4 py-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors duration-200 rounded-lg">
+                      <Calendar className="w-4 h-4" />
                     </button>
-                  ) : (
-                    <button
-                      onClick={() => handleJoinGroup(group)}
-                      className="flex-1 bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors duration-200 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <Users className="w-4 h-4" />
-                      Join Group
-                    </button>
-                  )}
-                  <button className="px-4 py-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors duration-200 rounded-lg">
-                    <Calendar className="w-4 h-4" />
-                  </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -501,6 +518,48 @@ export function Groups() {
                   onChange={e => dispatchModal({ type: "SET_FIELD", field: "description", value: e.target.value })}
                   disabled={modal.loading}
                 />
+                {/* Banner Image Upload */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">Banner Image (optional)</label>
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <div className="w-32 h-16 bg-muted rounded-lg flex items-center justify-center border-2 border-dashed border-border hover:border-primary transition-colors cursor-pointer">
+                        {modal.bannerUrl ? (
+                          <img 
+                            src={modal.bannerUrl} 
+                            alt="Banner preview" 
+                            className="w-full h-full rounded-lg object-cover"
+                          />
+                        ) : (
+                          <div className="text-muted-foreground text-center text-xs">Add Banner</div>
+                        )}
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={e => {
+                          if (e.target.files && e.target.files[0]) {
+                            dispatchModal({ type: "SET_FIELD", field: "banner", value: e.target.files[0] });
+                            dispatchModal({ type: "SET_FIELD", field: "bannerUrl", value: URL.createObjectURL(e.target.files[0]) });
+                          }
+                        }}
+                        disabled={modal.loading}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-muted-foreground">
+                        Upload a banner image (JPEG, PNG, WebP) for your group.
+                      </p>
+                      {modal.banner && (
+                        <p className="text-xs text-foreground mt-1">
+                          Selected: {modal.banner.name}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {/* Group Image Upload */}
                 <div>
                   <label className="block text-sm font-medium mb-2">Group Image (optional)</label>
                   <div className="flex items-center gap-4">
