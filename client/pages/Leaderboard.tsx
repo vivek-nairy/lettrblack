@@ -219,9 +219,9 @@ export function Leaderboard() {
                             "from-orange-400 to-orange-600 shadow-xl shadow-orange-400/20",
                         )}
                       >
-                        {user.profileImage ? (
+                        {user.avatarUrl ? (
                           <img
-                            src={user.profileImage}
+                            src={user.avatarUrl}
                             alt={user.name}
                             className={cn(
                               "rounded-full object-cover",
@@ -396,9 +396,9 @@ export function Leaderboard() {
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-3">
-                        {user.profileImage ? (
+                        {user.avatarUrl ? (
                           <img
-                            src={user.profileImage}
+                            src={user.avatarUrl}
                             alt={user.name}
                             className="w-10 h-10 rounded-full object-cover"
                           />
