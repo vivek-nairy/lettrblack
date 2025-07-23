@@ -248,7 +248,9 @@ export function Leaderboard() {
                       </div>
                       {/* Winner crown effect */}
                       {isWinner && (
-                        <Crown className="absolute -top-6 left-1/2 transform -translate-x-1/2 w-8 h-8 text-yellow-400 animate-bounce" />
+                        <div className="absolute left-1/2 top-0 flex justify-center w-full" style={{ transform: 'translate(-50%, -70%)' }}>
+                          <Crown className="w-8 h-8 text-yellow-400 animate-bounce" />
+                        </div>
                       )}
                     </div>
 
