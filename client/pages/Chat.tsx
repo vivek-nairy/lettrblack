@@ -4,6 +4,7 @@ import { useAuthUser } from "../hooks/useAuthUser";
 import { getGroup, subscribeToMessages, sendMessage, removeUserFromGroup } from "../lib/firestore-utils";
 import { storage } from "../lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { getFirestore, doc, updateDoc } from "firebase/firestore";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
@@ -50,6 +51,10 @@ export function Chat() {
   const [showVideoCall, setShowVideoCall] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [bannerUploadLoading, setBannerUploadLoading] = useState(false);
+  const [bannerUploadError, setBannerUploadError] = useState("");
+  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
 
   // Video call hook
   const videoCall = useVideoCall(groupId || "", group?.name);
@@ -209,6 +214,42 @@ export function Chat() {
       } catch (error) {
         console.error("Error exiting group:", error);
       }
+    }
+  };
+
+  // Banner upload handler
+  const handleBannerEditClick = () => {
+    setBannerUploadError("");
+    bannerInputRef.current?.click();
+  };
+
+  const handleBannerFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setBannerUploadError("");
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Validate type and size
+    const validTypes = ["image/jpeg", "image/png"];
+    if (!validTypes.includes(file.type)) {
+      setBannerUploadError("Only JPG and PNG images are allowed.");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setBannerUploadError("Image size must be less than 2MB.");
+      return;
+    }
+    setBannerPreview(URL.createObjectURL(file));
+    setBannerUploadLoading(true);
+    try {
+      const bannerRef = ref(storage, `group_banners/${group.id}/banner.jpg`);
+      await uploadBytes(bannerRef, file);
+      const url = await getDownloadURL(bannerRef);
+      const db = getFirestore();
+      await updateDoc(doc(db, "groups", group.id), { bannerUrl: url });
+      setBannerPreview(null);
+    } catch (err: any) {
+      setBannerUploadError(err.message || "Failed to upload banner.");
+    } finally {
+      setBannerUploadLoading(false);
     }
   };
 
@@ -494,6 +535,44 @@ export function Chat() {
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </Button>
+              </div>
+              {/* Group Banner */}
+              <div className="mb-6 relative">
+                <div className="w-full h-32 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+                  <img
+                    src={bannerPreview || group.bannerUrl || '/default-group-banner.jpg'}
+                    alt="Group Banner"
+                    className="w-full h-full object-cover"
+                  />
+                  {bannerUploadLoading && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
+                  )}
+                </div>
+                {isGroupAdmin() && (
+                  <>
+                    <input
+                      ref={bannerInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png"
+                      className="hidden"
+                      onChange={handleBannerFileChange}
+                    />
+                    <Button
+                      variant="outline"
+                      className="absolute top-2 right-2"
+                      onClick={handleBannerEditClick}
+                      disabled={bannerUploadLoading}
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit
+                    </Button>
+                  </>
+                )}
+                {bannerUploadError && (
+                  <div className="text-destructive text-xs mt-2 text-center">{bannerUploadError}</div>
+                )}
               </div>
               
               {/* Group Image */}
