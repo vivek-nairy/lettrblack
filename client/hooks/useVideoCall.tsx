@@ -134,7 +134,7 @@ export function useVideoCall(groupId: string, groupName?: string) {
 
     // Add local stream tracks
     if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => {
+      (localStreamRef.current?.getTracks() || []).forEach(track => {
         console.log(`Adding track to peer connection: ${track.kind}`);
         pc.addTrack(track, localStreamRef.current!);
       });
@@ -319,7 +319,7 @@ export function useVideoCall(groupId: string, groupName?: string) {
               p => p.userId !== firebaseUser.uid && !peerConnections.current.has(p.userId)
             );
             
-            newParticipants.forEach(participant => {
+            (newParticipants || []).forEach(participant => {
               // (removed unterminated string)
             });
           }
@@ -359,9 +359,9 @@ export function useVideoCall(groupId: string, groupName?: string) {
       if (unsubscribeVideoCall.current) {
         unsubscribeVideoCall.current();
       }
-      peerConnections.current.forEach(pc => pc.close());
+      (peerConnections.current || []).forEach(pc => pc.close());
       peerConnections.current.clear();
-      localStreamRef.current?.getTracks().forEach(track => track.stop());
+      (localStreamRef.current?.getTracks() || []).forEach(track => track.stop());
       localStreamRef.current = null;
       setState(prev => ({ ...prev, localStream: null, remoteStreams: new Map() }));
     };

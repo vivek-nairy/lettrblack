@@ -57,7 +57,7 @@ export function VideoCallModal({
 
   // Set remote video streams
   useEffect(() => {
-    remoteStreams.forEach((stream, peerId) => {
+    (remoteStreams || []).forEach((stream, peerId) => {
       const videoElement = remoteVideoRefs.current.get(peerId);
       if (videoElement) {
         videoElement.srcObject = stream;
