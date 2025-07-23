@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home,
   Users,
@@ -33,6 +33,7 @@ export function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const { user, firebaseUser } = useAuthUser();
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-background">
@@ -127,7 +128,10 @@ export function Layout({ children }: LayoutProps) {
             </div>
 
             <div className="flex items-center gap-4">
-              <button className="relative p-2 rounded-lg hover:bg-muted">
+              <button
+                className="relative p-2 rounded-lg hover:bg-muted"
+                onClick={() => navigate("/notifications")}
+              >
                 <Bell className="w-5 h-5" />
                 <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full"></span>
               </button>
