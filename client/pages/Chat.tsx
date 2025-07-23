@@ -63,11 +63,15 @@ export function Chat() {
 
     // Get group data
     const loadGroup = async () => {
-      const groupData = await getGroup(groupId);
-      if (groupData) {
-        setGroup(groupData);
-      } else {
-        navigate("/groups");
+      try {
+        const groupData = await getGroup(groupId);
+        if (groupData) {
+          setGroup(groupData);
+        } else {
+          setGroup({ notFound: true });
+        }
+      } catch (e) {
+        setGroup({ notFound: true });
       }
     };
     loadGroup();
@@ -219,6 +223,19 @@ export function Chat() {
     );
   }
 
+  if (group.notFound) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="text-4xl mb-4">😕</div>
+          <p className="text-lg text-destructive font-semibold mb-2">Group not found</p>
+          <p className="text-muted-foreground mb-4">The group you are looking for does not exist or was deleted.</p>
+          <Button onClick={() => navigate('/groups')}>Back to Groups</Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Top Bar */}
@@ -234,9 +251,9 @@ export function Chat() {
           </Button>
           
           <Avatar className="w-10 h-10">
-            <AvatarImage src={group.groupImageUrl || group.bannerUrl} />
+            <AvatarImage src={group.groupImageUrl || group.bannerUrl || '/default-group-banner.jpg'} />
             <AvatarFallback className="bg-primary text-primary-foreground">
-              {group.name.charAt(0).toUpperCase()}
+              {group.name?.charAt(0).toUpperCase() || '?'}
             </AvatarFallback>
           </Avatar>
           
@@ -485,15 +502,15 @@ export function Chat() {
                   {group.groupImageUrl ? (
                     <img 
                       src={group.groupImageUrl} 
-                      alt={group.name}
+                      alt={group.name || 'Group'}
                       className="w-full h-full rounded-full object-cover"
                     />
                   ) : (
-                    group.name.charAt(0).toUpperCase()
+                    group.name?.charAt(0).toUpperCase() || '?'
                   )}
                 </div>
-                <h3 className="text-lg font-semibold">{group.name}</h3>
-                <p className="text-muted-foreground">{group.subject}</p>
+                <h3 className="text-lg font-semibold">{group.name || 'Unnamed Group'}</h3>
+                <p className="text-muted-foreground">{group.subject || 'No subject'}</p>
               </div>
               
               {/* Group Info */}
