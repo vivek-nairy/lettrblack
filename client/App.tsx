@@ -25,6 +25,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { LogOut, User } from "lucide-react";
 import { LiveChatWidget } from "@/components/LiveChatWidget";
+import Notifications from "./pages/Notifications";
 
 const queryClient = new QueryClient();
 
@@ -123,6 +124,11 @@ const App = () => {
             <Route path="/upgrade" element={
               <AuthWrapper>
                 <Upgrade />
+              </AuthWrapper>
+            } />
+            <Route path="/notifications" element={
+              <AuthWrapper>
+                <Notifications />
               </AuthWrapper>
             } />
             <Route path="*" element={<NotFound />} />
