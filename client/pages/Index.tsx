@@ -21,6 +21,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
+import { AIChatWidget } from "../components/AIChatWidget";
 
 export function Index() {
   const { user, firebaseUser } = useAuthUser();
@@ -30,6 +31,7 @@ export function Index() {
   const { toast } = useToast();
   const [prevLevel, setPrevLevel] = useState(user?.level || 1);
   const [prevXp, setPrevXp] = useState(user?.xp || 0);
+  const [aiOpen, setAiOpen] = useState(false);
 
   useEffect(() => {
     if (firebaseUser) {
@@ -196,6 +198,7 @@ export function Index() {
           </CardContent>
         </Card>
       </div>
+      <AIChatWidget isOpen={aiOpen} onToggle={() => setAiOpen((v) => !v)} />
     </Layout>
   );
 }
