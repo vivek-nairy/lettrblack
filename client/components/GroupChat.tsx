@@ -18,9 +18,15 @@ import {
   Mic,
   Maximize2,
   Minimize2,
-  Settings
+  Settings,
+  Phone,
+  PhoneOff,
+  Volume2,
+  VolumeX
 } from "lucide-react";
 import { cn } from "../lib/utils";
+import { useVoiceCall } from "../hooks/useVoiceCall";
+import { toast } from "./ui/use-toast";
 
 interface Message {
   id: string;
@@ -59,6 +65,8 @@ export function GroupChat({
   const [isUploading, setIsUploading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { state: callState, startCall, answerCall, endCall, toggleMute } = useVoiceCall(groupId, groupName);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     if (!groupId) return;
@@ -75,6 +83,27 @@ export function GroupChat({
     // Auto-scroll to bottom when new messages arrive
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    if (callState.isRinging && audioRef.current) {
+      audioRef.current.play();
+    } else if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+  }, [callState.isRinging]);
+
+  useEffect(() => {
+    if (callState.isInCall) {
+      toast({ title: "Voice Call Started", description: "You are now in a voice call." });
+    }
+    if (!callState.isInCall && !callState.isRinging) {
+      toast({ title: "Call Ended", description: "The call has ended." });
+    }
+    if (callState.error) {
+      toast({ title: "Call Error", description: callState.error });
+    }
+  }, [callState.isInCall, callState.isRinging, callState.error]);
 
   const handleSendMessage = async () => {
     if (!firebaseUser || (!newMessage.trim() && !selectedFile)) return;
@@ -191,6 +220,59 @@ export function GroupChat({
         </div>
         
         <div className="flex items-center gap-2">
+          {/* Voice Call Button/Status */}
+          {callState.isInCall ? (
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleMute}
+                className={callState.isMuted ? "text-red-500" : "text-green-500"}
+              >
+                {callState.isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={endCall}
+                className="text-destructive"
+              >
+                <PhoneOff className="w-5 h-5" />
+              </Button>
+              <span className="text-xs text-green-500 font-semibold ml-1">In Call…</span>
+            </div>
+          ) : callState.isRinging ? (
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={answerCall}
+                className="text-green-500 animate-pulse"
+              >
+                <Phone className="w-5 h-5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={endCall}
+                className="text-destructive"
+              >
+                <PhoneOff className="w-5 h-5" />
+              </Button>
+              <span className="text-xs text-green-500 font-semibold ml-1">Incoming Call…</span>
+              {callState.callerName && <span className="text-xs text-muted-foreground ml-1">from {callState.callerName}</span>}
+              <audio ref={audioRef} src="/ringtone.mp3" loop />
+            </div>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={startCall}
+              className="text-muted-foreground hover:text-green-500"
+            >
+              <Phone className="w-5 h-5" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
