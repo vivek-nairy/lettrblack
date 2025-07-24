@@ -510,9 +510,15 @@ export function Groups() {
                         type="file"
                         accept="image/jpeg,image/png,image/webp"
                         onChange={e => {
-                          if (e.target.files && e.target.files[0]) {
-                            dispatchModal({ type: "SET_FIELD", field: "banner", value: e.target.files[0] });
-                            dispatchModal({ type: "SET_FIELD", field: "bannerUrl", value: URL.createObjectURL(e.target.files[0]) });
+                          const file = e.target.files && e.target.files[0];
+                          const maxSize = 10 * 1024 * 1024; // 10MB
+                          if (file) {
+                            if (file.size > maxSize) {
+                              dispatchModal({ type: "SET_ERROR", error: "Banner image too large. Max size is 10MB." });
+                              return;
+                            }
+                            dispatchModal({ type: "SET_FIELD", field: "banner", value: file });
+                            dispatchModal({ type: "SET_FIELD", field: "bannerUrl", value: URL.createObjectURL(file) });
                           }
                         }}
                         disabled={modal.loading}
@@ -564,9 +570,15 @@ export function Groups() {
                         type="file"
                         accept="image/*"
                         onChange={e => {
-                          if (e.target.files && e.target.files[0]) {
-                            dispatchModal({ type: "SET_FIELD", field: "image", value: e.target.files[0] });
-                            dispatchModal({ type: "SET_FIELD", field: "imageUrl", value: URL.createObjectURL(e.target.files[0]) });
+                          const file = e.target.files && e.target.files[0];
+                          const maxSize = 10 * 1024 * 1024; // 10MB
+                          if (file) {
+                            if (file.size > maxSize) {
+                              dispatchModal({ type: "SET_ERROR", error: "Group image too large. Max size is 10MB." });
+                              return;
+                            }
+                            dispatchModal({ type: "SET_FIELD", field: "image", value: file });
+                            dispatchModal({ type: "SET_FIELD", field: "imageUrl", value: URL.createObjectURL(file) });
                           }
                         }}
                         disabled={modal.loading}
