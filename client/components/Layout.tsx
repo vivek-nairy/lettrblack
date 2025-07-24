@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home,
@@ -12,6 +12,8 @@ import {
   User,
   Menu,
   X,
+  Sun,
+  Moon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthUser } from "@/hooks/useAuthUser";
@@ -34,6 +36,27 @@ export function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const { user, firebaseUser } = useAuthUser();
   const navigate = useNavigate();
+  const [theme, setTheme] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("theme") || "dark";
+    }
+    return "dark";
+  });
+
+  useEffect(() => {
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+      document.documentElement.classList.remove("light");
+    } else {
+      document.documentElement.classList.remove("dark");
+      document.documentElement.classList.add("light");
+    }
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -128,6 +151,13 @@ export function Layout({ children }: LayoutProps) {
             </div>
 
             <div className="flex items-center gap-4">
+              <button
+                className="p-2 rounded-md hover:bg-muted transition-colors"
+                onClick={toggleTheme}
+                aria-label="Toggle theme"
+              >
+                {theme === "dark" ? <Sun className="w-5 h-5 text-yellow-400 transition-all" /> : <Moon className="w-5 h-5 text-blue-500 transition-all" />}
+              </button>
               <button
                 className="relative p-2 rounded-lg hover:bg-muted"
                 onClick={() => navigate("/notifications")}
