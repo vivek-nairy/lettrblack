@@ -71,7 +71,7 @@
 
 @layer components {
   .lettrblack-card {
-    @apply bg-card border border-border rounded-xl p-6 shadow-lg;
+    @apply bg-card border border-border rounded-xl p-6 shadow-lg transition-all duration-300;
   }
 
   .lettrblack-button {
@@ -89,6 +89,20 @@
   .lettrblack-xp-fill {
     @apply h-full bg-gradient-to-r from-primary to-accent transition-all duration-300;
   }
+
+  /* Group Card Enhancements */
+  .group-card {
+    @apply bg-card border border-border rounded-xl shadow-lg transition-all duration-300 overflow-hidden flex flex-col max-h-[250px] min-h-[220px];
+  }
+  .group-card:hover {
+    @apply scale-[1.025] shadow-2xl;
+  }
+  .group-avatar {
+    @apply w-12 h-12 -mt-8 border-2 border-card bg-secondary shadow-md rounded-full flex items-center justify-center overflow-hidden;
+  }
+  .group-card-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6;
+  }
 }
 
 /* --- Mobile Responsive Enhancements --- */
@@ -97,6 +111,20 @@
     padding: 1rem !important;
     border-radius: 0.75rem !important;
     box-shadow: 0 2px 8px 0 rgba(0,0,0,0.10) !important;
+  }
+  .group-card {
+    min-height: 180px !important;
+    max-height: 220px !important;
+    padding: 0.75rem !important;
+  }
+  .group-avatar {
+    width: 48px !important;
+    height: 48px !important;
+    margin-top: -24px !important;
+  }
+  .group-card-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
   }
   .lettrblack-button {
     width: 100%;

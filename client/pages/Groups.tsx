@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 
 const categories = ["All", "Programming", "Math", "Language", "Science"];
@@ -298,7 +299,7 @@ export function Groups() {
 
         {/* Groups Grid */}
         {filteredGroups.length > 0 ? (
-          <div className="flex flex-col gap-6">
+          <div className="group-card-grid">
             {filteredGroups.map((group) => (
               <div
                 key={group.id}
@@ -306,140 +307,104 @@ export function Groups() {
                 role="button"
                 aria-label={`Open group ${group.name}`}
                 className={cn(
-                  "group relative bg-gradient-to-br",
-                  group.color,
-                  "border border-border rounded-xl p-0 transition-all duration-300 backdrop-blur-sm overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer select-none",
-                  "hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]",
+                  "group-card group relative focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer select-none",
+                  "active:scale-[0.98]"
                 )}
                 onClick={() => navigate(`/chat/${group.id}`)}
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') navigate(`/chat/${group.id}`); }}
                 style={{ WebkitTapHighlightColor: 'transparent' }}
               >
                 {/* Banner Image */}
-                <div className="w-full h-36 md:h-40 bg-muted">
+                <div className="w-full h-[100px] bg-muted relative">
                   <img
                     src={group.bannerUrl || '/default-group-banner.jpg'}
                     alt="Group Banner"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover object-center"
                     loading="lazy"
                   />
                 </div>
                 {/* Card Content */}
-                <div className="p-6 flex flex-col gap-4">
-                  {/* Active Indicator */}
-                  {group.isActive && (
-                    <div className="absolute top-4 right-4">
-                      <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                    </div>
-                  )}
-
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-1">
-                        <div
-                          className={cn(
-                            "w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden bg-secondary",
-                            group.bgAccent,
-                          )}
-                        >
-                          {group.groupImageUrl ? (
-                            <img
-                              src={group.groupImageUrl}
-                              alt={group.name}
-                              className="w-full h-full object-cover"
-                              loading="lazy"
-                            />
-                          ) : (
-                            <BookOpen className="w-5 h-5 text-white" />
-                          )}
-                        </div>
-                        <div className="truncate">
-                          <h3 className="font-semibold text-foreground text-lg truncate">
-                            {group.name}
-                          </h3>
-                          <p className="text-sm text-muted-foreground truncate">
-                            {group.subject}
-                          </p>
-                        </div>
+                <div className="flex-1 flex flex-col gap-2 px-4 py-3">
+                  {/* Header Row: Avatar + Name/Subject + Menu */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Avatar className="group-avatar">
+                        <AvatarImage src={group.groupImageUrl} alt={group.name} />
+                        <AvatarFallback>
+                          {group.name?.split(" ").map(w => w[0]).join("").slice(0,2).toUpperCase() || <BookOpen className="w-5 h-5" />}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="truncate">
+                        <h3 className="font-semibold text-base truncate text-foreground leading-tight">{group.name}</h3>
+                        <p className="text-xs text-muted-foreground truncate">{group.subject}</p>
                       </div>
-                      {group.description && (
-                        <p className="text-sm text-muted-foreground mt-1 truncate">
-                          {group.description}
-                        </p>
-                      )}
                     </div>
-                    <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                    <button className="p-1 hover:bg-white/10 rounded-lg transition-colors">
                       <MoreVertical className="w-4 h-4 text-muted-foreground" />
                     </button>
                   </div>
-
+                  {/* Description */}
+                  {group.description && (
+                    <p className="text-xs text-muted-foreground truncate mb-1">{group.description}</p>
+                  )}
                   {/* XP Progress */}
-                  <div className="mb-2">
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
+                  <div className="mb-1">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <div className="flex items-center gap-1">
                         <Trophy className={cn("w-4 h-4", group.accentColor)} />
-                        <span className="text-sm font-medium text-foreground">
-                          Level {group.currentLevel}
-                        </span>
+                        <span className="text-xs font-medium text-foreground">Lvl {group.currentLevel}</span>
                       </div>
-                      <span className="text-sm text-muted-foreground">
-                        {group.xp} / {group.nextLevelXp} XP
-                      </span>
+                      <span className="text-xs text-muted-foreground">{group.xp} / {group.nextLevelXp} XP</span>
                     </div>
-                    <div className="lettrblack-xp-bar h-2 bg-muted rounded-full overflow-hidden">
+                    <div className="lettrblack-xp-bar h-1.5 bg-muted rounded-full overflow-hidden">
                       <div
                         className="lettrblack-xp-fill h-full bg-primary transition-all duration-500"
                         style={{ width: `${calculateProgress(group.xp, group.nextLevelXp)}%` }}
                       ></div>
                     </div>
                   </div>
-
                   {/* Members */}
-                  <div className="flex items-center gap-3 mb-1">
+                  <div className="flex items-center gap-2 mb-1">
                     <div className="flex -space-x-2">
-                      {(group.avatars || []).slice(0, 4).map((avatar, index) => (
+                      {(group.avatars || []).slice(0, 3).map((avatar, index) => (
                         <img
                           key={index}
                           src={avatar}
                           alt={`Member ${index + 1}`}
-                          className="w-8 h-8 rounded-full border-2 border-background object-cover"
+                          className="w-7 h-7 rounded-full border-2 border-card object-cover"
                           loading="lazy"
                         />
                       ))}
-                      {group.members && group.members > 4 && (
-                        <div className="w-8 h-8 rounded-full bg-muted border-2 border-background flex items-center justify-center text-xs font-medium text-foreground">
-                          +{group.members - 4}
+                      {group.members && group.members > 3 && (
+                        <div className="w-7 h-7 rounded-full bg-muted border-2 border-card flex items-center justify-center text-[10px] font-medium text-foreground">
+                          +{group.members - 3}
                         </div>
                       )}
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Users className="w-4 h-4" />
-                        {(group.members || 1)}/{group.maxMembers || 1} members
-                      </span>
-                    </div>
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Users className="w-3 h-3" />
+                      {(group.members || 1)}/{group.maxMembers || 1} members
+                    </span>
                   </div>
-
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
+                  {/* Last Activity */}
+                  <div className="flex items-center gap-1 text-[11px] text-muted-foreground mb-1">
                     <Clock className="w-3 h-3" />
                     {group.lastActivity || "No recent activity"}
                   </div>
-
                   {/* Actions */}
-                  <div className="flex gap-3 mt-2">
+                  <div className="flex gap-2 mt-auto">
                     {!group.memberIds?.includes(firebaseUser?.uid) && (
                       <button
                         onClick={e => { e.stopPropagation(); handleJoinGroup(group); }}
-                        className="flex-1 bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors duration-200 rounded-lg flex items-center justify-center gap-2"
+                        className="flex-1 bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors duration-200 rounded-lg flex items-center justify-center gap-2 text-xs py-1"
                       >
                         <Users className="w-4 h-4" />
-                        Join Group
+                        Join
                       </button>
                     )}
                     <button
                       onClick={e => e.stopPropagation()}
-                      className="px-4 py-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors duration-200 rounded-lg"
+                      className="px-2 py-1 bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors duration-200 rounded-lg text-xs"
                     >
                       <Calendar className="w-4 h-4" />
                     </button>
