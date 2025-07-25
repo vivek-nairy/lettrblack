@@ -77,7 +77,9 @@ export function Layout({ children }: LayoutProps) {
       >
         <div className="flex items-center justify-between p-6">
           <div className="flex items-center gap-2">
-            <img src="/LettrBlack_logo.png" alt="LettrBlack Logo" className="h-10 w-auto" />
+            {/* Show black logo in light mode, white logo in dark mode */}
+            <img src="/LettrBlack_logo_black.png" alt="LettrBlack Logo" className="h-10 w-auto block dark:hidden" />
+            <img src="/LettrBlack_logo.png" alt="LettrBlack Logo" className="h-10 w-auto hidden dark:block" />
           </div>
           <button
             className="lg:hidden p-1 rounded-md hover:bg-sidebar-accent"
