@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuthUser } from "../hooks/useAuthUser";
-import { getGroup, subscribeToMessages, sendMessage, removeUserFromGroup } from "../lib/firestore-utils";
+import { getGroup, subscribeToMessages, sendMessage, removeUserFromGroup, subscribeToCallEvents } from "../lib/firestore-utils";
 import { storage } from "../lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { getFirestore, doc, updateDoc } from "firebase/firestore";
@@ -27,7 +27,7 @@ import {
   Phone
 } from "lucide-react";
 import { cn } from "../lib/utils";
-import { Group, Message } from "../lib/firestore-structure";
+import { Group, Message, CallEvent } from "../lib/firestore-structure";
 import { useNotifications } from "../hooks/useNotifications";
 import { useToast } from "../hooks/use-toast";
 import { ToastAction } from '@/components/ui/toast';
@@ -37,7 +37,7 @@ export function Chat() {
   const { groupId } = useParams<{ groupId: string }>();
   const navigate = useNavigate();
   const { firebaseUser } = useAuthUser();
-  const [group, setGroup] = useState<Group | null>(null);
+  const [group, setGroup] = useState<Group | null | { notFound: true }>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -101,9 +101,7 @@ export function Chat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  useEffect(() => {
-    console.log('[VideoCall State]', videoCall);
-  }, [videoCall]);
+
 
   const handleSendMessage = async () => {
     if (!firebaseUser || !groupId || (!newMessage.trim() && !selectedFile)) return;
@@ -187,7 +185,7 @@ export function Chat() {
   };
 
   const isOwnMessage = (message: Message) => message.senderId === firebaseUser?.uid;
-  const isGroupAdmin = () => group?.ownerId === firebaseUser?.uid;
+  const isGroupAdmin = () => group && 'ownerId' in group && group.ownerId === firebaseUser?.uid;
 
   const shouldShowDate = (message: Message, index: number) => {
     if (index === 0) return true;
@@ -257,7 +255,7 @@ export function Chat() {
     );
   }
 
-  if (group.notFound) {
+  if (group && 'notFound' in group && group.notFound) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
@@ -268,6 +266,11 @@ export function Chat() {
         </div>
       </div>
     );
+  }
+
+  // Type guard to ensure we have a valid Group object
+  if (!group || 'notFound' in group) {
+    return null;
   }
 
   return (
