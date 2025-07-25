@@ -28,9 +28,6 @@ import {
 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { Group, Message } from "../lib/firestore-structure";
-import { useVideoCall } from "../hooks/useVideoCall";
-import { VideoCallModal } from "../components/VideoCallModal";
-import { subscribeToCallEvents } from "../lib/firestore-utils";
 import { useNotifications } from "../hooks/useNotifications";
 import { useToast } from "../hooks/use-toast";
 import { ToastAction } from '@/components/ui/toast';
@@ -48,7 +45,6 @@ export function Chat() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showProfile, setShowProfile] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const [showVideoCall, setShowVideoCall] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [bannerUploadLoading, setBannerUploadLoading] = useState(false);
@@ -56,9 +52,6 @@ export function Chat() {
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
 
-  // Video call hook
-  const videoCall = useVideoCall(groupId || "", group?.name);
-  
   // Notifications hook
   const notifications = useNotifications();
   const { toast } = useToast();
@@ -307,20 +300,6 @@ export function Chat() {
         </div>
         
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              if (!videoCall.isInCall && !videoCall.isConnecting) {
-                setShowVideoCall(true);
-                videoCall.startCall();
-              }
-            }}
-            className="p-2"
-            disabled={videoCall.isConnecting}
-          >
-            <Phone className="w-5 h-5" />
-          </Button>
           <Button
             variant="ghost"
             size="sm"
@@ -641,29 +620,6 @@ export function Chat() {
           </div>
         </div>
       )}
-
-      {/* Video Call Modal */}
-      <VideoCallModal
-        isOpen={showVideoCall && videoCall.isInCall}
-        onClose={() => {
-          setShowVideoCall(false);
-          // Do NOT call videoCall.endCall() here
-        }}
-        localStream={videoCall.localStream}
-        remoteStreams={videoCall.remoteStreams}
-        participants={videoCall.participants}
-        isMuted={videoCall.isMuted}
-        isVideoOff={videoCall.isVideoOff}
-        isConnecting={videoCall.isConnecting}
-        error={videoCall.error}
-        connectionStatus={videoCall.connectionStatus}
-        onToggleMute={videoCall.toggleMute}
-        onToggleVideo={videoCall.toggleVideo}
-        onEndCall={() => {
-          setShowVideoCall(false);
-          videoCall.endCall();
-        }}
-      />
     </div>
   );
 } 
