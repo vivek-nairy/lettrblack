@@ -77,11 +77,14 @@ export function Layout({ children }: LayoutProps) {
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
         )}
       >
-        <div className="flex items-center justify-between p-6">
-          <div className="flex items-center gap-2">
-            {/* TEMP: Show both logos for debug */}
-            <img src="/LettrBlack_logo_black.png" alt="Test Black Logo" style={{ height: 40 }} />
-            <img src="/LettrBlack_logo.png" alt="Test White Logo" style={{ height: 40 }} />
+        <div className="flex items-center justify-between py-4 pl-4 pr-6">
+          <div className="flex items-center gap-2 h-12">
+            {/* Show only one logo based on theme */}
+            {theme === "dark" ? (
+              <img src="/LettrBlack_logo.png" alt="LettrBlack Logo" className="h-10 w-auto" />
+            ) : (
+              <img src="/LettrBlack_logo_black.png" alt="LettrBlack Logo" className="h-10 w-auto" />
+            )}
           </div>
           <button
             className="lg:hidden p-1 rounded-md hover:bg-sidebar-accent"
@@ -144,12 +147,12 @@ export function Layout({ children }: LayoutProps) {
                 <Menu className="w-5 h-5" />
               </button>
 
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <div className="relative w-full sm:w-96">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                 <input
                   type="text"
                   placeholder="Search groups, notes, or users..."
-                  className="w-96 pl-10 pr-4 py-2 bg-input border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground placeholder:text-muted-foreground"
+                  className="w-full pl-12 pr-4 py-2 bg-input border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground placeholder:text-muted-foreground"
                 />
               </div>
             </div>
