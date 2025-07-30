@@ -13,7 +13,8 @@ import {
   Menu,
   X,
   Sun,
-  Moon
+  Moon,
+  Video
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthUser } from "@/hooks/useAuthUser";
@@ -26,6 +27,7 @@ interface LayoutProps {
 const sidebarItems = [
   { name: "Home", href: "/", icon: Home },
   { name: "My Groups", href: "/groups", icon: Users },
+  { name: "ByteLearn", href: "/bytelearn", icon: Video },
   { name: "XP", href: "/xp", icon: Trophy },
   { name: "Leaderboard", href: "/leaderboard", icon: Crown },
   { name: "Marketplace", href: "/marketplace", icon: Store },
@@ -77,9 +79,9 @@ export function Layout({ children }: LayoutProps) {
       >
         <div className="flex items-center justify-between p-6">
           <div className="flex items-center gap-2">
-            {/* Show black logo in light mode, white logo in dark mode */}
-            <img src="/LettrBlack_logo_black.png" alt="LettrBlack Logo" className="h-10 w-auto block dark:hidden" />
-            <img src="/LettrBlack_logo.png" alt="LettrBlack Logo" className="h-10 w-auto hidden dark:block" />
+            {/* TEMP: Show both logos for debug */}
+            <img src="/LettrBlack_logo_black.png" alt="Test Black Logo" style={{ height: 40 }} />
+            <img src="/LettrBlack_logo.png" alt="Test White Logo" style={{ height: 40 }} />
           </div>
           <button
             className="lg:hidden p-1 rounded-md hover:bg-sidebar-accent"
