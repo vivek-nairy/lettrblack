@@ -14,6 +14,7 @@ import { XP } from "./pages/XP";
 import { Leaderboard } from "./pages/Leaderboard";
 import Marketplace from "./pages/Marketplace";
 import ByteLearn from "./pages/ByteLearn";
+import ByteLearnPage from "./pages/ByteLearnPage";
 import { Profile } from "./pages/Profile";
 import { Upgrade } from "./pages/Upgrade";
 import { SignInPage } from "./pages/SignInPage";
@@ -119,7 +120,7 @@ const App = () => {
             } />
             <Route path="/bytelearn" element={
               <AuthWrapper>
-                <ByteLearn />
+                <ByteLearnPage />
               </AuthWrapper>
             } />
             <Route path="/profile" element={
