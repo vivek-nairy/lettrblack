@@ -12,7 +12,8 @@ import {
   Code,
   Target,
   TrendingUp,
-  RotateCcw
+  RotateCcw,
+  BookOpen
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { WordRace } from "../components/games/WordRace";
 import { QuizDuel } from "../components/games/QuizDuel";
+import { FlashcardBattle } from "../components/games/FlashcardBattle";
 
 interface Game {
   id: string;
@@ -94,6 +96,18 @@ const games: Game[] = [
     color: "from-pink-500 to-yellow-400",
     status: "available",
     duration: "1-2 min"
+  },
+  {
+    id: "flashcard-battle",
+    name: "Flashcard Battle",
+    description: "Battle friends with flashcards! First to answer correctly wins the round.",
+    category: "multiplayer",
+    xpReward: 35,
+    icon: BookOpen,
+    color: "from-indigo-500 to-purple-600",
+    status: "available",
+    players: 2,
+    duration: "3-5 min"
   },
 ];
 
@@ -354,6 +368,10 @@ function GameModal({ game, onComplete, onCancel }: GameModalProps) {
     onComplete(xp);
   };
 
+  const handleFlashcardBattleComplete = (won: boolean, xp: number) => {
+    onComplete(xp);
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-card rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
@@ -362,6 +380,8 @@ function GameModal({ game, onComplete, onCancel }: GameModalProps) {
             <WordRace onComplete={handleWordRaceComplete} onCancel={onCancel} />
           ) : game.id === "quiz-duel" ? (
             <QuizDuel onComplete={handleQuizDuelComplete} onCancel={onCancel} />
+          ) : game.id === "flashcard-battle" ? (
+            <FlashcardBattle onComplete={handleFlashcardBattleComplete} onCancel={onCancel} />
           ) : game.id === "spin-learn" ? (
             <div className="flex flex-col items-center justify-center min-h-[300px]">
               <div className="w-32 h-32 rounded-full bg-gradient-to-br from-pink-500 to-yellow-400 flex items-center justify-center mb-6 animate-spin-slow">
