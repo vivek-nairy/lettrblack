@@ -11,7 +11,8 @@ import {
   Brain,
   Code,
   Target,
-  TrendingUp
+  TrendingUp,
+  RotateCcw
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -82,7 +83,18 @@ const games: Game[] = [
     color: "from-gray-500 to-gray-600",
     status: "coming-soon",
     duration: "5-10 min"
-  }
+  },
+  {
+    id: "spin-learn",
+    name: "Spin & Learn",
+    description: "Spin the wheel, answer a question, and win XP or prizes!",
+    category: "single",
+    xpReward: 15,
+    icon: RotateCcw,
+    color: "from-pink-500 to-yellow-400",
+    status: "available",
+    duration: "1-2 min"
+  },
 ];
 
 const filterOptions = [
@@ -350,6 +362,16 @@ function GameModal({ game, onComplete, onCancel }: GameModalProps) {
             <WordRace onComplete={handleWordRaceComplete} onCancel={onCancel} />
           ) : game.id === "quiz-duel" ? (
             <QuizDuel onComplete={handleQuizDuelComplete} onCancel={onCancel} />
+          ) : game.id === "spin-learn" ? (
+            <div className="flex flex-col items-center justify-center min-h-[300px]">
+              <div className="w-32 h-32 rounded-full bg-gradient-to-br from-pink-500 to-yellow-400 flex items-center justify-center mb-6 animate-spin-slow">
+                <RotateCcw className="w-16 h-16 text-white" />
+              </div>
+              <h2 className="text-xl font-bold mb-2">Spin & Learn</h2>
+              <p className="text-muted-foreground mb-4">Spin the wheel to get a question and win rewards!</p>
+              <Button disabled>Coming Soon</Button>
+              <Button variant="outline" onClick={onCancel} className="mt-2">Back to Games</Button>
+            </div>
           ) : (
             <div className="text-center space-y-4">
               <div className={`w-16 h-16 bg-gradient-to-br ${game.color} rounded-full flex items-center justify-center mx-auto`}>
