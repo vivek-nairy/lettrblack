@@ -21,6 +21,7 @@ import { useXP } from "../contexts/XPContext";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { WordRace } from "../components/games/WordRace";
+import { QuizDuel } from "../components/games/QuizDuel";
 
 interface Game {
   id: string;
@@ -337,12 +338,18 @@ function GameModal({ game, onComplete, onCancel }: GameModalProps) {
     onComplete(xpEarned);
   };
 
+  const handleQuizDuelComplete = (won: boolean, xp: number) => {
+    onComplete(xp);
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-card rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           {game.id === "word-race" ? (
             <WordRace onComplete={handleWordRaceComplete} onCancel={onCancel} />
+          ) : game.id === "quiz-duel" ? (
+            <QuizDuel onComplete={handleQuizDuelComplete} onCancel={onCancel} />
           ) : (
             <div className="text-center space-y-4">
               <div className={`w-16 h-16 bg-gradient-to-br ${game.color} rounded-full flex items-center justify-center mx-auto`}>
