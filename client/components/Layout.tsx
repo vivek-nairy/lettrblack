@@ -14,7 +14,8 @@ import {
   X,
   Sun,
   Moon,
-  Video
+  Video,
+  Gamepad2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthUser } from "@/hooks/useAuthUser";
@@ -28,6 +29,7 @@ const sidebarItems = [
   { name: "Home", href: "/", icon: Home },
   { name: "My Groups", href: "/groups", icon: Users },
   { name: "ByteLearn", href: "/bytelearn", icon: Video },
+  { name: "LettrPlay", href: "/lettrplay", icon: Gamepad2 },
   { name: "XP", href: "/xp", icon: Trophy },
   { name: "Leaderboard", href: "/leaderboard", icon: Crown },
   { name: "Marketplace", href: "/marketplace", icon: Store },
