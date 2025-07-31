@@ -28,6 +28,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { LogOut, User } from "lucide-react";
 import { LiveChatWidget } from "@/components/LiveChatWidget";
 import Notifications from "./pages/Notifications";
+import { XPProvider } from "./contexts/XPContext";
 
 const queryClient = new QueryClient();
 
@@ -81,67 +82,69 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/signin" element={<SignInPage />} />
-            <Route path="/signup" element={<SignUpPage />} />
-            
-            {/* Protected routes */}
-            <Route path="/" element={
-              <AuthWrapper>
-                <Index />
-              </AuthWrapper>
-            } />
-            <Route path="/groups" element={
-              <AuthWrapper>
-                <Groups />
-              </AuthWrapper>
-            } />
-            <Route path="/chat/:groupId" element={
-              <AuthWrapper>
-                <Chat />
-              </AuthWrapper>
-            } />
-            <Route path="/xp" element={
-              <AuthWrapper>
-                <XP />
-              </AuthWrapper>
-            } />
-            <Route path="/leaderboard" element={
-              <AuthWrapper>
-                <Leaderboard />
-              </AuthWrapper>
-            } />
-            <Route path="/marketplace" element={
-              <AuthWrapper>
-                <Marketplace />
-              </AuthWrapper>
-            } />
-            <Route path="/bytelearn" element={
-              <AuthWrapper>
-                <ByteLearnPage />
-              </AuthWrapper>
-            } />
-            <Route path="/profile" element={
-              <AuthWrapper>
-                <Profile />
-              </AuthWrapper>
-            } />
-            <Route path="/upgrade" element={
-              <AuthWrapper>
-                <Upgrade />
-              </AuthWrapper>
-            } />
-            <Route path="/notifications" element={
-              <AuthWrapper>
-                <Notifications />
-              </AuthWrapper>
-            } />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <LiveChatWidget />
-        </BrowserRouter>
+        <XPProvider>
+          <BrowserRouter>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/signin" element={<SignInPage />} />
+              <Route path="/signup" element={<SignUpPage />} />
+              
+              {/* Protected routes */}
+              <Route path="/" element={
+                <AuthWrapper>
+                  <Index />
+                </AuthWrapper>
+              } />
+              <Route path="/groups" element={
+                <AuthWrapper>
+                  <Groups />
+                </AuthWrapper>
+              } />
+              <Route path="/chat/:groupId" element={
+                <AuthWrapper>
+                  <Chat />
+                </AuthWrapper>
+              } />
+              <Route path="/xp" element={
+                <AuthWrapper>
+                  <XP />
+                </AuthWrapper>
+              } />
+              <Route path="/leaderboard" element={
+                <AuthWrapper>
+                  <Leaderboard />
+                </AuthWrapper>
+              } />
+              <Route path="/marketplace" element={
+                <AuthWrapper>
+                  <Marketplace />
+                </AuthWrapper>
+              } />
+              <Route path="/bytelearn" element={
+                <AuthWrapper>
+                  <ByteLearnPage />
+                </AuthWrapper>
+              } />
+              <Route path="/profile" element={
+                <AuthWrapper>
+                  <Profile />
+                </AuthWrapper>
+              } />
+              <Route path="/upgrade" element={
+                <AuthWrapper>
+                  <Upgrade />
+                </AuthWrapper>
+              } />
+              <Route path="/notifications" element={
+                <AuthWrapper>
+                  <Notifications />
+                </AuthWrapper>
+              } />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <LiveChatWidget />
+          </BrowserRouter>
+        </XPProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

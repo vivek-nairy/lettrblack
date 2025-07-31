@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { addXpToUser } from "../lib/firestore-utils";
 import { cn } from "@/lib/utils";
 import { fetchByteLearnVideos, updateVideoLikes, updateVideoViews, updateVideoComments, ByteLearnVideo } from "../lib/bytelearn-utils";
+import { useXP } from "../contexts/XPContext";
 
 // Sample data matching Firebase schema
 
@@ -300,6 +301,7 @@ function ReelCard({
 export default function ByteLearnPage() {
   const { user, firebaseUser } = useAuthUser();
   const { toast } = useToast();
+  const { triggerXPConfetti } = useXP();
   const [videos, setVideos] = useState<ByteLearnVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [likedVideos, setLikedVideos] = useState<Set<string>>(new Set());
@@ -332,6 +334,8 @@ export default function ByteLearnPage() {
   }, []);
 
   const handleLike = async (videoId: string) => {
+    const wasLiked = likedVideos.has(videoId);
+    
     setLikedVideos(prev => {
       const newSet = new Set(prev);
       if (newSet.has(videoId)) {
@@ -341,6 +345,8 @@ export default function ByteLearnPage() {
         // Add XP for liking
         if (firebaseUser) {
           addXpToUser(firebaseUser.uid, 1, 'like_video', 5);
+          // Trigger confetti for new likes
+          triggerXPConfetti(1, "Like XP!");
         }
       }
       return newSet;
@@ -348,7 +354,7 @@ export default function ByteLearnPage() {
 
     // Update Firebase likes count
     try {
-      await updateVideoLikes(videoId, 1);
+      await updateVideoLikes(videoId, wasLiked ? -1 : 1);
     } catch (error) {
       console.error("Error updating likes:", error);
     }
@@ -366,6 +372,8 @@ export default function ByteLearnPage() {
   };
 
   const handleSave = (videoId: string) => {
+    const wasSaved = savedVideos.has(videoId);
+    
     setSavedVideos(prev => {
       const newSet = new Set(prev);
       if (newSet.has(videoId)) {
@@ -375,6 +383,8 @@ export default function ByteLearnPage() {
         // Add XP for saving
         if (firebaseUser) {
           addXpToUser(firebaseUser.uid, 2, 'save_video', 10);
+          // Trigger confetti for new saves
+          triggerXPConfetti(2, "Save XP!");
         }
       }
       return newSet;
@@ -407,6 +417,10 @@ export default function ByteLearnPage() {
     try {
       await addXpToUser(firebaseUser.uid, xpReward, 'watch_video', xpReward * 2);
       setEarnedXP(prev => new Set([...prev, videoId]));
+      
+      // Trigger confetti animation
+      triggerXPConfetti(xpReward, "XP Earned!");
+      
       toast({ 
         title: `+${xpReward} XP Earned!`, 
         description: `Great job! You earned ${xpReward} XP for watching this video.` 

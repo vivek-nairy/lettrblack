@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { getGroupsByUser, getProgressByUser } from "@/lib/firestore-utils";
 import { useAuthUser } from "../hooks/useAuthUser";
-import confetti from "canvas-confetti";
+import { useXPConfetti } from "../hooks/useXPConfetti";
 import { useToast } from "../hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -29,8 +29,7 @@ export function Index() {
   const [groups, setGroups] = useState([]);
   const [progress, setProgress] = useState([]);
   const { toast } = useToast();
-  const [prevLevel, setPrevLevel] = useState(user?.level || 1);
-  const [prevXp, setPrevXp] = useState(user?.xp || 0);
+  const { showConfetti } = useXPConfetti();
   const [aiOpen, setAiOpen] = useState(false);
 
   useEffect(() => {
@@ -39,34 +38,6 @@ export function Index() {
       getProgressByUser(firebaseUser.uid).then(setProgress);
     }
   }, [firebaseUser]);
-
-  // Level up confetti and toast
-  useEffect(() => {
-    if (user && user.level > prevLevel) {
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 }
-      });
-      toast({
-        title: "🎉 Level Up!",
-        description: `Congratulations! You've reached level ${user.level}!`,
-      });
-    }
-    setPrevLevel(user?.level || 1);
-  }, [user?.level, prevLevel, toast]);
-
-  // XP gain toast
-  useEffect(() => {
-    if (user && user.xp > prevXp) {
-      const xpGained = user.xp - prevXp;
-      toast({
-        title: `+${xpGained} XP`,
-        description: "Great job! Keep up the good work!",
-      });
-    }
-    setPrevXp(user?.xp || 0);
-  }, [user?.xp, prevXp, toast]);
 
   // XP/Level progress calculation
   const xp = user?.xp || 0;
