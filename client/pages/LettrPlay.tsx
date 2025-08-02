@@ -15,7 +15,8 @@ import {
   RotateCcw,
   BookOpen,
   Scissors,
-  Gamepad
+  Gamepad,
+  Volume2
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ import { QuizDuel } from "../components/games/QuizDuel";
 import { FlashcardBattle } from "../components/games/FlashcardBattle";
 import { WordDash } from "../components/games/WordDash";
 import { SnakeGame } from "../components/games/SnakeGame";
+import { GuessTheSound } from "../components/games/GuessTheSound";
 
 interface Game {
   id: string;
@@ -134,6 +136,17 @@ const games: Game[] = [
     color: "from-green-500 to-emerald-600",
     status: "available",
     duration: "2-5 min"
+  },
+  {
+    id: "guess-the-sound",
+    name: "Guess the Sound",
+    description: "Listen to sounds and identify what they are! Learn about animals, nature, history, and more.",
+    category: "single",
+    xpReward: 35,
+    icon: Volume2,
+    color: "from-blue-500 to-purple-600",
+    status: "available",
+    duration: "3-5 min"
   },
 ];
 
@@ -406,6 +419,10 @@ function GameModal({ game, onComplete, onCancel }: GameModalProps) {
     onComplete(xpEarned);
   };
 
+  const handleGuessTheSoundComplete = (score: number, xpEarned: number) => {
+    onComplete(xpEarned);
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-card rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
@@ -420,6 +437,8 @@ function GameModal({ game, onComplete, onCancel }: GameModalProps) {
             <WordDash onComplete={handleWordDashComplete} onCancel={onCancel} />
           ) : game.id === "snake-game" ? (
             <SnakeGame onComplete={handleSnakeGameComplete} onCancel={onCancel} />
+          ) : game.id === "guess-the-sound" ? (
+            <GuessTheSound onComplete={handleGuessTheSoundComplete} onCancel={onCancel} />
           ) : game.id === "spin-learn" ? (
             <div className="flex flex-col items-center justify-center min-h-[300px]">
               <div className="w-32 h-32 rounded-full bg-gradient-to-br from-pink-500 to-yellow-400 flex items-center justify-center mb-6 animate-spin-slow">
