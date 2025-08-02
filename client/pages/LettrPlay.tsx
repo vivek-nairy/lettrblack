@@ -17,7 +17,8 @@ import {
   Scissors,
   Gamepad,
   Volume2,
-  Image
+  Image,
+  Sword
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ import { WordDash } from "../components/games/WordDash";
 import { SnakeGame } from "../components/games/SnakeGame";
 import { GuessTheSound } from "../components/games/GuessTheSound";
 import { MemeBuilder } from "../components/games/MemeBuilder";
+import { MiniBattleRoyale } from "../components/games/MiniBattleRoyale";
 
 interface Game {
   id: string;
@@ -160,6 +162,18 @@ const games: Game[] = [
     color: "from-purple-500 to-pink-600",
     status: "available",
     duration: "5-10 min"
+  },
+  {
+    id: "mini-battle-royale",
+    name: "Mini Battle Royale",
+    description: "Join the ultimate quiz battle! Answer correctly or be eliminated. Last one standing wins!",
+    category: "multiplayer",
+    xpReward: 50,
+    icon: Sword,
+    color: "from-red-500 to-orange-600",
+    status: "available",
+    players: 10,
+    duration: "3-8 min"
   },
 ];
 
@@ -440,6 +454,10 @@ function GameModal({ game, onComplete, onCancel }: GameModalProps) {
     onComplete(xpEarned);
   };
 
+  const handleMiniBattleRoyaleComplete = (score: number, xpEarned: number) => {
+    onComplete(xpEarned);
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-card rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
@@ -458,6 +476,8 @@ function GameModal({ game, onComplete, onCancel }: GameModalProps) {
             <GuessTheSound onComplete={handleGuessTheSoundComplete} onCancel={onCancel} />
           ) : game.id === "meme-builder" ? (
             <MemeBuilder onComplete={handleMemeBuilderComplete} onCancel={onCancel} />
+          ) : game.id === "mini-battle-royale" ? (
+            <MiniBattleRoyale onComplete={handleMiniBattleRoyaleComplete} onCancel={onCancel} />
           ) : game.id === "spin-learn" ? (
             <div className="flex flex-col items-center justify-center min-h-[300px]">
               <div className="w-32 h-32 rounded-full bg-gradient-to-br from-pink-500 to-yellow-400 flex items-center justify-center mb-6 animate-spin-slow">
