@@ -8,8 +8,6 @@ import {
   Play, 
   Star,
   Zap,
-  Brain,
-  Code,
   Target,
   TrendingUp,
   RotateCcw,
@@ -74,28 +72,7 @@ const games: Game[] = [
     players: 2,
     duration: "3-7 min"
   },
-  {
-    id: "memory-matrix",
-    name: "Memory Matrix",
-    description: "Tap correct squares in sequence. Train your memory and concentration!",
-    category: "single",
-    xpReward: 20,
-    icon: Brain,
-    color: "from-orange-500 to-red-600",
-    status: "available",
-    duration: "1-3 min"
-  },
-  {
-    id: "code-rush",
-    name: "Code Rush",
-    description: "Solve code-based puzzles against the clock. Perfect for programmers!",
-    category: "coming-soon",
-    xpReward: 40,
-    icon: Code,
-    color: "from-gray-500 to-gray-600",
-    status: "coming-soon",
-    duration: "5-10 min"
-  },
+
   {
     id: "spin-learn",
     name: "Spin & Learn",
