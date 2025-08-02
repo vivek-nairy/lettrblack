@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Layout } from "@/components/Layout";
-import { Video, Sparkles } from "lucide-react";
+import { Video, Sparkles, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthUser } from "../hooks/useAuthUser";
 import { useToast } from "@/hooks/use-toast";
@@ -8,6 +8,7 @@ import { addXpToUser } from "../lib/firestore-utils";
 import { ReelCard } from "@/components/ReelCard";
 import { FilterTabs } from "@/components/FilterTabs";
 import { ByteLearnUploadModal } from "@/components/ByteLearnUploadModal";
+import { useNavigate } from "react-router-dom";
 
 // Sample data structure for ByteLearn reels
 interface ByteLearnReel {
@@ -40,6 +41,7 @@ const filterOptions = [
 export default function ByteLearn() {
   const { user, firebaseUser } = useAuthUser();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [reels, setReels] = useState<ByteLearnReel[]>([]);
   const [filteredReels, setFilteredReels] = useState<ByteLearnReel[]>([]);
   const [selectedFilter, setSelectedFilter] = useState("all");
@@ -245,7 +247,18 @@ export default function ByteLearn() {
         {/* Header with filters */}
         <div className="flex-shrink-0 bg-card border-b border-border p-4">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-foreground">ByteLearn</h1>
+            <div className="flex items-center gap-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center gap-2"
+                onClick={() => navigate('/')}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back
+              </Button>
+              <h1 className="text-2xl font-bold text-foreground">ByteLearn</h1>
+            </div>
             <Button 
               variant="outline" 
               size="sm" 

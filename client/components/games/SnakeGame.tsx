@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Play, RotateCcw, Target, Zap, Info } from "lucide-react";
+import { Play, RotateCcw, Target, Zap, Info, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface SnakeGameProps {
   onComplete: (score: number, xpEarned: number) => void;
@@ -78,6 +79,7 @@ const letterColors = [
 
 export function SnakeGame({ onComplete, onCancel }: SnakeGameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const isMobile = useIsMobile();
   const [gameState, setGameState] = useState<GameState>({
     snake: [{ x: 10, y: 10 }],
     food: null,
@@ -125,8 +127,10 @@ export function SnakeGame({ onComplete, onCancel }: SnakeGameProps) {
     };
   };
 
-  // Handle keyboard input
+  // Handle keyboard input (desktop only)
   useEffect(() => {
+    if (isMobile) return; // Skip keyboard controls on mobile
+
     const handleKeyPress = (e: KeyboardEvent) => {
       if (!gameStarted || gameState.gameOver) return;
 
@@ -160,7 +164,24 @@ export function SnakeGame({ onComplete, onCancel }: SnakeGameProps) {
 
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [gameStarted, gameState.direction, gameState.gameOver]);
+  }, [gameStarted, gameState.direction, gameState.gameOver, isMobile]);
+
+  // Mobile control handlers
+  const handleDirectionChange = (newDirection: string) => {
+    if (!gameStarted || gameState.gameOver) return;
+
+    const currentDirection = gameState.direction;
+    const validMoves = {
+      up: currentDirection !== "down",
+      down: currentDirection !== "up",
+      left: currentDirection !== "right",
+      right: currentDirection !== "left"
+    };
+
+    if (validMoves[newDirection as keyof typeof validMoves]) {
+      setGameState(prev => ({ ...prev, direction: newDirection }));
+    }
+  };
 
   // Game loop
   useEffect(() => {
@@ -400,16 +421,68 @@ export function SnakeGame({ onComplete, onCancel }: SnakeGameProps) {
             <CardContent>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="text-center">
-                  <p className="font-bold">Arrow Keys</p>
+                  <p className="font-bold">{isMobile ? "Touch Buttons" : "Arrow Keys"}</p>
                   <p className="text-muted-foreground">Move Snake</p>
                 </div>
                 <div className="text-center">
-                  <p className="font-bold">Spacebar</p>
+                  <p className="font-bold">{isMobile ? "Pause Button" : "Spacebar"}</p>
                   <p className="text-muted-foreground">Pause/Resume</p>
                 </div>
               </div>
             </CardContent>
           </Card>
+
+          {/* Mobile Controls */}
+          {isMobile && gameStarted && !gameState.gameOver && (
+            <div className="fixed bottom-4 left-4 right-4 z-50">
+              <div className="bg-background/90 backdrop-blur-sm border border-border rounded-lg p-4">
+                <div className="flex flex-col items-center gap-2">
+                  {/* Up Arrow */}
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="w-16 h-16 rounded-full"
+                    onClick={() => handleDirectionChange("up")}
+                  >
+                    <ArrowUp className="w-6 h-6" />
+                  </Button>
+                  
+                  {/* Middle Row - Left and Right */}
+                  <div className="flex items-center gap-4">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="w-16 h-16 rounded-full"
+                      onClick={() => handleDirectionChange("left")}
+                    >
+                      <ArrowLeft className="w-6 h-6" />
+                    </Button>
+                    
+                    <div className="w-16 h-16" /> {/* Spacer */}
+                    
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="w-16 h-16 rounded-full"
+                      onClick={() => handleDirectionChange("right")}
+                    >
+                      <ArrowRight className="w-6 h-6" />
+                    </Button>
+                  </div>
+                  
+                  {/* Down Arrow */}
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="w-16 h-16 rounded-full"
+                    onClick={() => handleDirectionChange("down")}
+                  >
+                    <ArrowDown className="w-6 h-6" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Fact Display */}
           {gameState.showFact && (

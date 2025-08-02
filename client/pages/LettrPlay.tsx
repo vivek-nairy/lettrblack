@@ -16,7 +16,8 @@ import {
   Gamepad,
   Volume2,
   Image,
-  Sword
+  Sword,
+  X
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -330,32 +331,16 @@ export default function LettrPlay() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {[
-                { name: "Alex Chen", xp: 1250, game: "Word Race" },
-                { name: "Sarah Kim", xp: 980, game: "Quiz Duel" },
-                { name: "Mike Johnson", xp: 750, game: "Memory Matrix" },
-              ].map((player, index) => (
-                <div key={player.name} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className={cn(
-                      "w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm",
-                      index === 0 ? "bg-yellow-500" : 
-                      index === 1 ? "bg-gray-400" : 
-                      "bg-orange-500"
-                    )}>
-                      {index + 1}
-                    </div>
-                    <div>
-                      <p className="font-medium">{player.name}</p>
-                      <p className="text-sm text-muted-foreground">{player.game}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold">{player.xp} XP</p>
-                    <p className="text-xs text-muted-foreground">Total</p>
-                  </div>
-                </div>
-              ))}
+              {/* TODO: Replace with actual Firestore data */}
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <Trophy className="w-12 h-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold text-muted-foreground mb-2">
+                  No achievers yet
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Be the first to win! Play games and earn XP to appear on the leaderboard.
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -436,9 +421,20 @@ function GameModal({ game, onComplete, onCancel }: GameModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-card rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
+    <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
+      <div className="w-full h-full bg-card">
+        <div className="relative w-full h-full">
+          {/* Exit Game Button */}
+          <Button
+            onClick={onCancel}
+            variant="outline"
+            size="sm"
+            className="absolute top-4 right-4 z-10 bg-background/80 backdrop-blur-sm border-white/20 text-white hover:bg-background/90 md:top-6 md:right-6"
+          >
+            <X className="w-4 h-4 mr-2" />
+            <span className="hidden md:inline">Exit Game</span>
+            <span className="md:hidden">Exit</span>
+          </Button>
           {game.id === "word-race" ? (
             <WordRace onComplete={handleWordRaceComplete} onCancel={onCancel} />
           ) : game.id === "quiz-duel" ? (
