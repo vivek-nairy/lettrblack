@@ -13,7 +13,8 @@ import {
   Target,
   TrendingUp,
   RotateCcw,
-  BookOpen
+  BookOpen,
+  Scissors
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { WordRace } from "../components/games/WordRace";
 import { QuizDuel } from "../components/games/QuizDuel";
 import { FlashcardBattle } from "../components/games/FlashcardBattle";
+import { WordDash } from "../components/games/WordDash";
 
 interface Game {
   id: string;
@@ -108,6 +110,17 @@ const games: Game[] = [
     status: "available",
     players: 2,
     duration: "3-5 min"
+  },
+  {
+    id: "word-dash",
+    name: "Word Dash",
+    description: "Unscramble letters to form as many words as possible in 60 seconds!",
+    category: "single",
+    xpReward: 30,
+    icon: Scissors,
+    color: "from-purple-500 to-pink-600",
+    status: "available",
+    duration: "1 min"
   },
 ];
 
@@ -372,6 +385,10 @@ function GameModal({ game, onComplete, onCancel }: GameModalProps) {
     onComplete(xp);
   };
 
+  const handleWordDashComplete = (score: number, xpEarned: number) => {
+    onComplete(xpEarned);
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-card rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
@@ -382,6 +399,8 @@ function GameModal({ game, onComplete, onCancel }: GameModalProps) {
             <QuizDuel onComplete={handleQuizDuelComplete} onCancel={onCancel} />
           ) : game.id === "flashcard-battle" ? (
             <FlashcardBattle onComplete={handleFlashcardBattleComplete} onCancel={onCancel} />
+          ) : game.id === "word-dash" ? (
+            <WordDash onComplete={handleWordDashComplete} onCancel={onCancel} />
           ) : game.id === "spin-learn" ? (
             <div className="flex flex-col items-center justify-center min-h-[300px]">
               <div className="w-32 h-32 rounded-full bg-gradient-to-br from-pink-500 to-yellow-400 flex items-center justify-center mb-6 animate-spin-slow">
