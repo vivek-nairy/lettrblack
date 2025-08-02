@@ -144,17 +144,22 @@ function ReelCard({
   };
 
   return (
-    <div className="h-screen w-full flex-shrink-0 snap-start relative bg-black">
-      {/* Video Player */}
-      <video
-        ref={videoRef}
-        src={video.videoURL}
-        className="w-full h-full object-cover"
-        loop
-        muted
-        playsInline
-        onClick={handleVideoClick}
-      />
+    <div className="h-screen w-full flex-shrink-0 snap-start relative bg-black flex items-center justify-center">
+      {/* Video Container with 9:16 aspect ratio */}
+      <div className="relative w-full h-full max-w-sm md:max-w-md mx-auto flex items-center justify-center">
+        <div className="w-full max-w-sm md:max-w-md aspect-[9/16] relative">
+        {/* Video Player */}
+        <video
+          ref={videoRef}
+          src={video.videoURL}
+          className="w-full h-full object-cover bg-black"
+          loop
+          muted
+          playsInline
+          onClick={handleVideoClick}
+        />
+        </div>
+      </div>
       
       {/* Video Overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
