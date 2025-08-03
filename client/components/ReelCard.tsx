@@ -77,16 +77,14 @@ export function ReelCard({
   return (
     <div className={cn(
       "relative bg-black",
-      isMobile ? "h-full w-full video-container-mobile" : "h-full w-full"
+      "h-full w-full video-container-mobile" // Force 9:16 on ALL devices
     )}>
       <video
         ref={videoRef}
         src={reel.videoUrl}
         className={cn(
-          "object-cover",
-          isMobile 
-            ? "w-full h-full object-cover video-player-mobile" // Mobile: fill entire screen
-            : "w-full h-full object-contain video-player-desktop" // Desktop: maintain aspect ratio
+          "w-full h-full object-cover video-player-mobile", // Force 9:16 on ALL devices
+          "aspect-ratio-9-16" // Custom class for 9:16
         )}
         loop
         muted

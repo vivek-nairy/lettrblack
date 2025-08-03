@@ -54,11 +54,11 @@ export default function ByteLearn() {
   const [savedReels, setSavedReels] = useState<Set<string>>(new Set());
   const [showUploadModal, setShowUploadModal] = useState(false);
 
-  // Sample data for development
+  // Sample data for development - ONLY 9:16 vertical videos
   const sampleReels: ByteLearnReel[] = [
     {
       id: "reel1",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      videoUrl: "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4", // This will be cropped to 9:16
       title: "Learn Pythagoras Theorem in 30s",
       subject: "Math",
       creator: {
@@ -75,7 +75,7 @@ export default function ByteLearn() {
     },
     {
       id: "reel2",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+      videoUrl: "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_2mb.mp4", // This will be cropped to 9:16
       title: "Chemistry: Atomic Structure Explained",
       subject: "Science",
       creator: {
@@ -92,7 +92,7 @@ export default function ByteLearn() {
     },
     {
       id: "reel3",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+      videoUrl: "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_5mb.mp4", // This will be cropped to 9:16
       title: "JavaScript Arrays in 60 Seconds",
       subject: "Tech",
       creator: {
