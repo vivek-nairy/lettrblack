@@ -250,65 +250,67 @@ export default function ByteLearn() {
         "flex flex-col",
         isMobile ? "h-screen" : "h-screen"
       )}>
-        {/* Header with filters - mobile optimized */}
-        <div className={cn(
-          "flex-shrink-0 bg-card border-b border-border",
-          isMobile ? "p-3" : "p-4"
-        )}>
+        {/* Header with filters - hidden on mobile for immersive experience */}
+        {!isMobile && (
           <div className={cn(
-            "flex items-center justify-between mb-4",
-            isMobile ? "mb-3" : "mb-4"
+            "flex-shrink-0 bg-card border-b border-border",
+            isMobile ? "p-3" : "p-4"
           )}>
-            <div className="flex items-center gap-4">
+            <div className={cn(
+              "flex items-center justify-between mb-4",
+              isMobile ? "mb-3" : "mb-4"
+            )}>
+              <div className="flex items-center gap-4">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className={cn(
+                    "flex items-center gap-2",
+                    isMobile ? "p-2 h-8 w-8" : ""
+                  )}
+                  onClick={() => navigate('/')}
+                >
+                  <ArrowLeft className={cn(
+                    isMobile ? "w-4 h-4" : "w-4 h-4"
+                  )} />
+                  {!isMobile && "Back"}
+                </Button>
+                <h1 className={cn(
+                  "font-bold text-foreground",
+                  isMobile ? "text-lg" : "text-2xl"
+                )}>
+                  ByteLearn
+                </h1>
+              </div>
               <Button 
                 variant="outline" 
                 size="sm" 
                 className={cn(
                   "flex items-center gap-2",
-                  isMobile ? "p-2 h-8 w-8" : ""
+                  isMobile ? "p-2 h-8 text-xs" : ""
                 )}
-                onClick={() => navigate('/')}
+                onClick={() => setShowUploadModal(true)}
               >
-                <ArrowLeft className={cn(
-                  isMobile ? "w-4 h-4" : "w-4 h-4"
+                <Video className={cn(
+                  isMobile ? "w-3 h-3" : "w-4 h-4"
                 )} />
-                {!isMobile && "Back"}
+                {!isMobile && "Upload Reel"}
               </Button>
-              <h1 className={cn(
-                "font-bold text-foreground",
-                isMobile ? "text-lg" : "text-2xl"
-              )}>
-                ByteLearn
-              </h1>
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className={cn(
-                "flex items-center gap-2",
-                isMobile ? "p-2 h-8 text-xs" : ""
-              )}
-              onClick={() => setShowUploadModal(true)}
-            >
-              <Video className={cn(
-                isMobile ? "w-3 h-3" : "w-4 h-4"
-              )} />
-              {!isMobile && "Upload Reel"}
-            </Button>
+            
+            {/* Filter tabs */}
+            <FilterTabs 
+              filters={filterOptions}
+              selectedFilter={selectedFilter}
+              onFilterChange={setSelectedFilter}
+            />
           </div>
-          
-          {/* Filter tabs */}
-          <FilterTabs 
-            filters={filterOptions}
-            selectedFilter={selectedFilter}
-            onFilterChange={setSelectedFilter}
-          />
-        </div>
+        )}
 
         {/* Video container - mobile optimized */}
         <div className={cn(
           "relative overflow-hidden",
-          isMobile ? "flex-1" : "flex-1"
+          isMobile ? "flex-1 h-screen" : "flex-1"
         )}>
           {filteredReels.length > 0 ? (
             <div className="h-full relative">

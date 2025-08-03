@@ -1,7 +1,8 @@
 import { useRef, useEffect } from "react";
-import { Heart, MessageCircle, Share, Bookmark, ChevronUp, ChevronDown } from "lucide-react";
+import { Heart, MessageCircle, Share, Bookmark, ChevronUp, ChevronDown, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Button } from "@/components/ui/button";
 
 interface ReelCardProps {
   reel: {
@@ -92,6 +93,21 @@ export function ReelCard({
         playsInline
         onClick={() => onVideoClick(reel.id)}
       />
+      
+      {/* Exit Button - Top Left */}
+      <Button
+        variant="outline"
+        size="sm"
+        className={cn(
+          "absolute top-4 left-4 z-20 bg-black/50 backdrop-blur-sm border-white/20 text-white hover:bg-black/70",
+          isMobile ? "p-2 h-8 w-8" : "p-2 h-10 w-10"
+        )}
+        onClick={() => window.history.back()}
+      >
+        <ArrowLeft className={cn(
+          isMobile ? "w-4 h-4" : "w-5 h-5"
+        )} />
+      </Button>
       
       {/* Video overlay - adjusted for mobile */}
       <div className={cn(
