@@ -9,6 +9,8 @@ import { ReelCard } from "@/components/ReelCard";
 import { FilterTabs } from "@/components/FilterTabs";
 import { ByteLearnUploadModal } from "@/components/ByteLearnUploadModal";
 import { useNavigate } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 // Sample data structure for ByteLearn reels
 interface ByteLearnReel {
@@ -42,6 +44,7 @@ export default function ByteLearn() {
   const { user, firebaseUser } = useAuthUser();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [reels, setReels] = useState<ByteLearnReel[]>([]);
   const [filteredReels, setFilteredReels] = useState<ByteLearnReel[]>([]);
   const [selectedFilter, setSelectedFilter] = useState("all");
@@ -243,30 +246,54 @@ export default function ByteLearn() {
 
   return (
     <Layout>
-      <div className="h-screen flex flex-col">
-        {/* Header with filters */}
-        <div className="flex-shrink-0 bg-card border-b border-border p-4">
-          <div className="flex items-center justify-between mb-4">
+      <div className={cn(
+        "flex flex-col",
+        isMobile ? "h-screen" : "h-screen"
+      )}>
+        {/* Header with filters - mobile optimized */}
+        <div className={cn(
+          "flex-shrink-0 bg-card border-b border-border",
+          isMobile ? "p-3" : "p-4"
+        )}>
+          <div className={cn(
+            "flex items-center justify-between mb-4",
+            isMobile ? "mb-3" : "mb-4"
+          )}>
             <div className="flex items-center gap-4">
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="flex items-center gap-2"
+                className={cn(
+                  "flex items-center gap-2",
+                  isMobile ? "p-2 h-8 w-8" : ""
+                )}
                 onClick={() => navigate('/')}
               >
-                <ArrowLeft className="w-4 h-4" />
-                Back
+                <ArrowLeft className={cn(
+                  isMobile ? "w-4 h-4" : "w-4 h-4"
+                )} />
+                {!isMobile && "Back"}
               </Button>
-              <h1 className="text-2xl font-bold text-foreground">ByteLearn</h1>
+              <h1 className={cn(
+                "font-bold text-foreground",
+                isMobile ? "text-lg" : "text-2xl"
+              )}>
+                ByteLearn
+              </h1>
             </div>
             <Button 
               variant="outline" 
               size="sm" 
-              className="flex items-center gap-2"
+              className={cn(
+                "flex items-center gap-2",
+                isMobile ? "p-2 h-8 text-xs" : ""
+              )}
               onClick={() => setShowUploadModal(true)}
             >
-              <Video className="w-4 h-4" />
-              Upload Reel
+              <Video className={cn(
+                isMobile ? "w-3 h-3" : "w-4 h-4"
+              )} />
+              {!isMobile && "Upload Reel"}
             </Button>
           </div>
           
@@ -278,8 +305,11 @@ export default function ByteLearn() {
           />
         </div>
 
-        {/* Video container */}
-        <div className="flex-1 relative overflow-hidden">
+        {/* Video container - mobile optimized */}
+        <div className={cn(
+          "relative overflow-hidden",
+          isMobile ? "flex-1" : "flex-1"
+        )}>
           {filteredReels.length > 0 ? (
             <div className="h-full relative">
               {/* Current reel */}
@@ -298,17 +328,22 @@ export default function ByteLearn() {
                 isSaved={savedReels.has(filteredReels[currentReelIndex]?.id || '')}
               />
 
-              {/* Progress indicator */}
-              <div className="absolute top-4 left-4 right-4">
+              {/* Progress indicator - mobile optimized */}
+              <div className={cn(
+                "absolute top-4 left-4 right-4",
+                isMobile ? "top-2 left-2 right-2" : ""
+              )}>
                 <div className="flex gap-1">
                   {filteredReels.map((_, index) => (
                     <div
                       key={index}
-                      className={`h-1 flex-1 rounded-full transition-colors ${
+                      className={cn(
+                        "h-1 flex-1 rounded-full transition-colors",
+                        isMobile ? "h-0.5" : "h-1",
                         index === currentReelIndex 
                           ? "bg-white" 
                           : "bg-white/30"
-                      }`}
+                      )}
                     />
                   ))}
                 </div>
@@ -317,9 +352,20 @@ export default function ByteLearn() {
           ) : (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <Video className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">No reels found</h3>
-                <p className="text-muted-foreground">
+                <Video className={cn(
+                  "text-muted-foreground mx-auto mb-4",
+                  isMobile ? "w-12 h-12" : "w-16 h-16"
+                )} />
+                <h3 className={cn(
+                  "font-semibold text-foreground mb-2",
+                  isMobile ? "text-base" : "text-lg"
+                )}>
+                  No reels found
+                </h3>
+                <p className={cn(
+                  "text-muted-foreground",
+                  isMobile ? "text-sm" : ""
+                )}>
                   Try adjusting your filters or be the first to upload a reel!
                 </p>
               </div>

@@ -1,6 +1,7 @@
 import { useRef, useEffect } from "react";
 import { Heart, MessageCircle, Share, Bookmark, ChevronUp, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ReelCardProps {
   reel: {
@@ -48,6 +49,7 @@ export function ReelCard({
   isSaved
 }: ReelCardProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (videoRef.current) {
@@ -72,45 +74,77 @@ export function ReelCard({
   };
 
   return (
-    <div className="h-full relative bg-black">
+    <div className={cn(
+      "relative bg-black",
+      isMobile ? "h-full w-full video-container-mobile" : "h-full w-full"
+    )}>
       <video
         ref={videoRef}
         src={reel.videoUrl}
-        className="w-full h-full object-cover"
+        className={cn(
+          "object-cover",
+          isMobile 
+            ? "w-full h-full object-cover video-player-mobile" // Mobile: fill entire screen
+            : "w-full h-full object-contain video-player-desktop" // Desktop: maintain aspect ratio
+        )}
         loop
         muted
         playsInline
         onClick={() => onVideoClick(reel.id)}
       />
       
-      {/* Video overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+      {/* Video overlay - adjusted for mobile */}
+      <div className={cn(
+        "absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent",
+        isMobile ? "from-black/60 via-transparent to-transparent" : ""
+      )} />
       
-      {/* Video info */}
-      <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+      {/* Video info - mobile optimized */}
+      <div className={cn(
+        "absolute bottom-0 left-0 right-0 text-white",
+        isMobile ? "p-4 video-controls-mobile" : "p-6"
+      )}>
         <div className="flex items-start gap-4">
           <div className="flex-1">
-            <h3 className="text-lg font-semibold mb-2">
+            <h3 className={cn(
+              "font-semibold mb-2",
+              isMobile ? "text-base" : "text-lg"
+            )}>
               {reel.title}
             </h3>
-            <div className="flex items-center gap-3 mb-3">
+            <div className={cn(
+              "flex items-center gap-3 mb-3",
+              isMobile ? "gap-2" : "gap-3"
+            )}>
               <div className="flex items-center gap-2">
                 <img 
                   src={reel.creator.profilePic} 
                   alt="Creator"
-                  className="w-8 h-8 rounded-full"
+                  className={cn(
+                    "rounded-full",
+                    isMobile ? "w-6 h-6" : "w-8 h-8"
+                  )}
                 />
-                <span className="font-medium">
+                <span className={cn(
+                  "font-medium",
+                  isMobile ? "text-sm" : ""
+                )}>
                   {reel.creator.username}
                 </span>
               </div>
-              <span className="text-sm opacity-80">
+              <span className={cn(
+                "opacity-80",
+                isMobile ? "text-xs" : "text-sm"
+              )}>
                 {formatTimeAgo(reel.timestamp)}
               </span>
             </div>
             <div className="flex flex-wrap gap-2">
               {reel.tags.map((tag) => (
-                <span key={tag} className="text-sm bg-white/20 px-2 py-1 rounded-full">
+                <span key={tag} className={cn(
+                  "bg-white/20 px-2 py-1 rounded-full",
+                  isMobile ? "text-xs" : "text-sm"
+                )}>
                   {tag}
                 </span>
               ))}
@@ -119,86 +153,147 @@ export function ReelCard({
         </div>
       </div>
 
-      {/* Action buttons */}
-      <div className="absolute right-4 bottom-20 flex flex-col gap-4">
+      {/* Action buttons - mobile optimized positioning */}
+      <div className={cn(
+        "absolute flex flex-col gap-4 text-white video-controls-mobile",
+        isMobile 
+          ? "right-3 bottom-24 gap-3" // Mobile: closer to edge, more spacing
+          : "right-4 bottom-20 gap-4" // Desktop: original positioning
+      )}>
         <button
           onClick={() => onLike(reel.id)}
-          className="flex flex-col items-center gap-1 text-white"
+          className={cn(
+            "flex flex-col items-center gap-1 text-white",
+            isMobile ? "mobile-touch-target" : ""
+          )}
         >
-          <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+          <div className={cn(
+            "bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm",
+            isMobile ? "w-10 h-10" : "w-12 h-12"
+          )}>
             <Heart 
               className={cn(
-                "w-6 h-6 transition-colors",
+                "transition-colors",
+                isMobile ? "w-5 h-5" : "w-6 h-6",
                 isLiked ? "fill-red-500 text-red-500" : ""
               )} 
             />
           </div>
-          <span className="text-sm font-medium">
+          <span className={cn(
+            "font-medium",
+            isMobile ? "text-xs" : "text-sm"
+          )}>
             {reel.likes}
           </span>
         </button>
 
-        <button className="flex flex-col items-center gap-1 text-white">
-          <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-            <MessageCircle className="w-6 h-6" />
+        <button className={cn(
+          "flex flex-col items-center gap-1 text-white",
+          isMobile ? "mobile-touch-target" : ""
+        )}>
+          <div className={cn(
+            "bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm",
+            isMobile ? "w-10 h-10" : "w-12 h-12"
+          )}>
+            <MessageCircle className={cn(
+              isMobile ? "w-5 h-5" : "w-6 h-6"
+            )} />
           </div>
-          <span className="text-sm font-medium">
+          <span className={cn(
+            "font-medium",
+            isMobile ? "text-xs" : "text-sm"
+          )}>
             {reel.comments}
           </span>
         </button>
 
         <button
           onClick={() => onShare(reel)}
-          className="flex flex-col items-center gap-1 text-white"
+          className={cn(
+            "flex flex-col items-center gap-1 text-white",
+            isMobile ? "mobile-touch-target" : ""
+          )}
         >
-          <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-            <Share className="w-6 h-6" />
+          <div className={cn(
+            "bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm",
+            isMobile ? "w-10 h-10" : "w-12 h-12"
+          )}>
+            <Share className={cn(
+              isMobile ? "w-5 h-5" : "w-6 h-6"
+            )} />
           </div>
-          <span className="text-sm font-medium">Share</span>
+          <span className={cn(
+            "font-medium",
+            isMobile ? "text-xs" : "text-sm"
+          )}>
+            Share
+          </span>
         </button>
 
         <button
           onClick={() => onSave(reel.id)}
-          className="flex flex-col items-center gap-1 text-white"
+          className={cn(
+            "flex flex-col items-center gap-1 text-white",
+            isMobile ? "mobile-touch-target" : ""
+          )}
         >
-          <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+          <div className={cn(
+            "bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm",
+            isMobile ? "w-10 h-10" : "w-12 h-12"
+          )}>
             <Bookmark 
               className={cn(
-                "w-6 h-6 transition-colors",
+                "transition-colors",
+                isMobile ? "w-5 h-5" : "w-6 h-6",
                 isSaved ? "fill-yellow-400 text-yellow-400" : ""
               )} 
             />
           </div>
-          <span className="text-sm font-medium">
+          <span className={cn(
+            "font-medium",
+            isMobile ? "text-xs" : "text-sm"
+          )}>
             {reel.saves}
           </span>
         </button>
       </div>
 
-      {/* Navigation arrows */}
-      <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
+      {/* Navigation arrows - mobile optimized */}
+      <div className={cn(
+        "absolute left-4 top-1/2 transform -translate-y-1/2 video-controls-mobile",
+        isMobile ? "left-2" : "left-4"
+      )}>
         <button
           onClick={onPrev}
           disabled={!canGoPrev}
           className={cn(
-            "w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm text-white transition-opacity",
+            "bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm text-white transition-opacity",
+            isMobile ? "w-8 h-8 mobile-touch-target" : "w-10 h-10",
             !canGoPrev ? "opacity-50" : "hover:bg-white/30"
           )}
         >
-          <ChevronUp className="w-5 h-5" />
+          <ChevronUp className={cn(
+            isMobile ? "w-4 h-4" : "w-5 h-5"
+          )} />
         </button>
       </div>
 
-      <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+      <div className={cn(
+        "absolute right-4 top-1/2 transform -translate-y-1/2 video-controls-mobile",
+        isMobile ? "right-2" : "right-4"
+      )}>
         <button
           onClick={onNext}
           disabled={!canGoNext}
           className={cn(
-            "w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm text-white transition-opacity",
+            "bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm text-white transition-opacity",
+            isMobile ? "w-8 h-8 mobile-touch-target" : "w-10 h-10",
             !canGoNext ? "opacity-50" : "hover:bg-white/30"
           )}
         >
-          <ChevronDown className="w-5 h-5" />
+          <ChevronDown className={cn(
+            isMobile ? "w-4 h-4" : "w-5 h-5"
+          )} />
         </button>
       </div>
     </div>

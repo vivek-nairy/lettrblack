@@ -251,3 +251,48 @@
     gap: 0.75rem !important;
   }
 }
+
+/* Mobile-specific video player optimizations */
+@media (max-width: 768px) {
+  /* Ensure video fills the entire mobile screen */
+  .video-player-mobile {
+    width: 100vw !important;
+    height: 100vh !important;
+    object-fit: cover !important;
+  }
+  
+  /* Optimize video container for mobile */
+  .video-container-mobile {
+    width: 100vw !important;
+    height: 100vh !important;
+    position: relative !important;
+    overflow: hidden !important;
+  }
+  
+  /* Ensure video controls don't overlap on mobile */
+  .video-controls-mobile {
+    z-index: 50 !important;
+    pointer-events: auto !important;
+  }
+  
+  /* Optimize touch targets for mobile */
+  .mobile-touch-target {
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+  
+  /* Ensure proper video aspect ratio on mobile */
+  video[class*="mobile"] {
+    aspect-ratio: 9/16 !important;
+    object-fit: cover !important;
+  }
+}
+
+/* Desktop video player optimizations */
+@media (min-width: 769px) {
+  /* Maintain 16:9 aspect ratio on desktop */
+  .video-player-desktop {
+    aspect-ratio: 16/9 !important;
+    object-fit: contain !important;
+  }
+}
