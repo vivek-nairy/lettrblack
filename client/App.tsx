@@ -1,5 +1,5 @@
 import "./global.css";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 import { Toaster } from "@/components/ui/toaster";
 import { createRoot } from "react-dom/client";
@@ -13,8 +13,6 @@ import { Chat } from "./pages/Chat";
 import { XP } from "./pages/XP";
 import { Leaderboard } from "./pages/Leaderboard";
 import Marketplace from "./pages/Marketplace";
-import ByteLearn from "./pages/ByteLearn";
-import ByteLearnPage from "./pages/ByteLearnPage";
 import LettrPlay from "./pages/LettrPlay";
 import { Profile } from "./pages/Profile";
 import { Upgrade } from "./pages/Upgrade";
@@ -30,33 +28,17 @@ import { LogOut, User } from "lucide-react";
 import { LiveChatWidget } from "@/components/LiveChatWidget";
 import Notifications from "./pages/Notifications";
 import { XPProvider } from "./contexts/XPContext";
+import { useAuthUser } from "./hooks/useAuthUser";
 
 const queryClient = new QueryClient();
 
 function AuthWrapper({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const handleSignOut = async () => {
-    try {
-      await signOut(auth);
-    } catch (error) {
-      console.error("Sign out error:", error);
-    }
-  };
+  const { user, loading } = useAuthUser();
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -121,17 +103,12 @@ const App = () => {
                   <Marketplace />
                 </AuthWrapper>
               } />
-                          <Route path="/bytelearn" element={
-              <AuthWrapper>
-                <ByteLearnPage />
-              </AuthWrapper>
-            } />
-            <Route path="/lettrplay" element={
-              <AuthWrapper>
-                <LettrPlay />
-              </AuthWrapper>
-            } />
-            <Route path="/profile" element={
+              <Route path="/lettrplay" element={
+                <AuthWrapper>
+                  <LettrPlay />
+                </AuthWrapper>
+              } />
+              <Route path="/profile" element={
                 <AuthWrapper>
                   <Profile />
                 </AuthWrapper>
