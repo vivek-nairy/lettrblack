@@ -29,6 +29,7 @@ import { LiveChatWidget } from "@/components/LiveChatWidget";
 import Notifications from "./pages/Notifications";
 import { XPProvider } from "./contexts/XPContext";
 import { useAuthUser } from "./hooks/useAuthUser";
+import ByteLearn from "./pages/ByteLearn";
 
 const queryClient = new QueryClient();
 
@@ -101,6 +102,11 @@ const App = () => {
               <Route path="/marketplace" element={
                 <AuthWrapper>
                   <Marketplace />
+                </AuthWrapper>
+              } />
+              <Route path="/bytelearn" element={
+                <AuthWrapper>
+                  <ByteLearn />
                 </AuthWrapper>
               } />
               <Route path="/lettrplay" element={
