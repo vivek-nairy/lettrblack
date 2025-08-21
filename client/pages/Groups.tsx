@@ -129,8 +129,20 @@ export function Groups() {
         createdAt: Date.now(),
         isPrivate: false,
       };
-      await createGroup(newGroup);
-      await addXpToUser(firebaseUser.uid, 10, "create_group", 10);
+      try {
+        await createGroup(newGroup);
+        console.log("Group created successfully");
+      } catch (err) {
+        console.error("Error creating group:", err);
+      }
+
+      try {
+        await addXpToUser(firebaseUser.uid, 10, "create_group", 10);
+        console.log("XP added successfully");
+      } catch (err) {
+        console.error("Error adding XP:", err);
+      }
+
       dispatchModal({ type: "CLOSE" });
       // Groups will be updated automatically via real-time subscription
     } catch (err) {

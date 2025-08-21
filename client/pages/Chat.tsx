@@ -8,6 +8,7 @@ import { getFirestore, doc, updateDoc } from "firebase/firestore";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
+import Picker from "emoji-picker-react";
 import { 
   Send, 
   Paperclip, 
@@ -51,6 +52,12 @@ export function Chat() {
   const [bannerUploadError, setBannerUploadError] = useState("");
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
+  const [showPicker, setShowPicker] = useState(false);
+
+  const handleEmojiClick = (emojiData: any) => {
+    setNewMessage(prev => prev + emojiData.emoji);
+    setShowPicker(false); // close after selecting
+  };
 
   // Notifications hook
   const notifications = useNotifications();
@@ -76,6 +83,7 @@ export function Chat() {
 
     // Subscribe to real-time messages
     const unsubscribeMessages = subscribeToMessages(groupId, (newMessages) => {
+      
       setMessages(newMessages as Message[]);
     });
 
@@ -104,8 +112,12 @@ export function Chat() {
 
 
   const handleSendMessage = async () => {
+
+    console.log("Sending message handleSendMessage", { firebaseUser, groupId, newMessage, selectedFile });
     if (!firebaseUser || !groupId || (!newMessage.trim() && !selectedFile)) return;
 
+    const messageText = newMessage.trim();
+    setNewMessage("");  
     setIsLoading(true);
     try {
       let fileUrl = "";
@@ -134,7 +146,7 @@ export function Chat() {
       });
       await addXpToUser(firebaseUser.uid, 1, 'post_message', 10);
 
-      setNewMessage("");
+
       setSelectedFile(null);
     } catch (error) {
       console.error("Error sending message:", error);
@@ -156,6 +168,7 @@ export function Chat() {
       handleSendMessage();
     }
   };
+
 
   const formatTime = (timestamp: any) => {
     if (!timestamp) return "";
@@ -450,7 +463,7 @@ export function Chat() {
             <textarea
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyPress}
               placeholder="Type a message..."
               className="w-full px-3 py-2 bg-input border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground placeholder:text-muted-foreground resize-none min-h-[40px] max-h-24"
               disabled={isLoading}
@@ -470,9 +483,24 @@ export function Chat() {
             size="sm"
             className="text-muted-foreground hover:text-foreground p-2"
             disabled={isLoading}
+            onClick={() => setShowPicker((prev) => !prev)}
           >
             <Smile className="w-5 h-5" />
           </Button>
+
+          {showPicker && (
+            <div className="absolute bottom-12 right-2 z-50 shadow-xl rounded-xl">
+              <Picker
+                onEmojiClick={handleEmojiClick}
+                width={400}      // smaller picker
+                height={400}
+                emojiSize={5}   // smaller emojis
+                theme="dark"
+              />
+            </div>
+          )}
+
+
           
           <Button
             variant="ghost"
