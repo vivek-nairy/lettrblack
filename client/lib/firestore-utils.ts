@@ -143,8 +143,10 @@ export async function getMessages(groupId: string) {
 
 // Real-time listener for messages
 export function subscribeToMessages(groupId: string, callback: (messages: any[]) => void) {
+  
   const q = query(
     collection(db, "groups", groupId, "messages"),
+    where("timestamp", "!=", null),     
     orderBy("timestamp", "asc")
   );
   return onSnapshot(q, (snapshot) => {

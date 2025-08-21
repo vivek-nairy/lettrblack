@@ -29,12 +29,13 @@ import { LiveChatWidget } from "@/components/LiveChatWidget";
 import Notifications from "./pages/Notifications";
 import { XPProvider } from "./contexts/XPContext";
 import { useAuthUser } from "./hooks/useAuthUser";
+import { useLocation } from "react-router-dom";
 
 const queryClient = new QueryClient();
 
 function AuthWrapper({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuthUser();
-
+  
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -54,8 +55,106 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
   );
 }
 
+function AppRoutes() {
+  const location = useLocation();
+
+  return (
+    <>
+      <Routes>
+        {/* Public routes */}
+        <Route path="/signin" element={<SignInPage />} />
+        <Route path="/signup" element={<SignUpPage />} />
+
+        {/* Protected routes */}
+        <Route
+          path="/"
+          element={
+            <AuthWrapper>
+              <Index />
+            </AuthWrapper>
+          }
+        />
+        <Route
+          path="/groups"
+          element={
+            <AuthWrapper>
+              <Groups />
+            </AuthWrapper>
+          }
+        />
+        <Route
+          path="/chat/:groupId"
+          element={
+            <AuthWrapper>
+              <Chat />
+            </AuthWrapper>
+          }
+        />
+        <Route
+          path="/xp"
+          element={
+            <AuthWrapper>
+              <XP />
+            </AuthWrapper>
+          }
+        />
+        <Route
+          path="/leaderboard"
+          element={
+            <AuthWrapper>
+              <Leaderboard />
+            </AuthWrapper>
+          }
+        />
+        <Route
+          path="/marketplace"
+          element={
+            <AuthWrapper>
+              <Marketplace />
+            </AuthWrapper>
+          }
+        />
+        <Route
+          path="/lettrplay"
+          element={
+            <AuthWrapper>
+              <LettrPlay />
+            </AuthWrapper>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <AuthWrapper>
+              <Profile />
+            </AuthWrapper>
+          }
+        />
+        <Route
+          path="/upgrade"
+          element={
+            <AuthWrapper>
+              <Upgrade />
+            </AuthWrapper>
+          }
+        />
+        <Route
+          path="/notifications"
+          element={
+            <AuthWrapper>
+              <Notifications />
+            </AuthWrapper>
+          }
+        />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+
+      {!location.pathname.startsWith("/chat/") && <LiveChatWidget />}
+    </>
+  );
+}
+
 const App = () => {
-  // Set dark mode on app load
   useEffect(() => {
     document.documentElement.classList.add("dark");
   }, []);
@@ -66,66 +165,9 @@ const App = () => {
         <Toaster />
         <Sonner />
         <XPProvider>
+          {/* Router mounted here */}
           <BrowserRouter>
-            <Routes>
-              {/* Public routes */}
-              <Route path="/signin" element={<SignInPage />} />
-              <Route path="/signup" element={<SignUpPage />} />
-              
-              {/* Protected routes */}
-              <Route path="/" element={
-                <AuthWrapper>
-                  <Index />
-                </AuthWrapper>
-              } />
-              <Route path="/groups" element={
-                <AuthWrapper>
-                  <Groups />
-                </AuthWrapper>
-              } />
-              <Route path="/chat/:groupId" element={
-                <AuthWrapper>
-                  <Chat />
-                </AuthWrapper>
-              } />
-              <Route path="/xp" element={
-                <AuthWrapper>
-                  <XP />
-                </AuthWrapper>
-              } />
-              <Route path="/leaderboard" element={
-                <AuthWrapper>
-                  <Leaderboard />
-                </AuthWrapper>
-              } />
-              <Route path="/marketplace" element={
-                <AuthWrapper>
-                  <Marketplace />
-                </AuthWrapper>
-              } />
-              <Route path="/lettrplay" element={
-                <AuthWrapper>
-                  <LettrPlay />
-                </AuthWrapper>
-              } />
-              <Route path="/profile" element={
-                <AuthWrapper>
-                  <Profile />
-                </AuthWrapper>
-              } />
-              <Route path="/upgrade" element={
-                <AuthWrapper>
-                  <Upgrade />
-                </AuthWrapper>
-              } />
-              <Route path="/notifications" element={
-                <AuthWrapper>
-                  <Notifications />
-                </AuthWrapper>
-              } />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <LiveChatWidget />
+            <AppRoutes />
           </BrowserRouter>
         </XPProvider>
       </TooltipProvider>
