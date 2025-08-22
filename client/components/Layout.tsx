@@ -15,11 +15,14 @@ import {
   Sun,
   Moon,
   Video,
-  Gamepad2
+  Gamepad2,
+  LogIn,
+  UserPlus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuthUser } from "@/hooks/useAuthUser";
+import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -37,7 +40,7 @@ const sidebarItems = [
 export function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  const { user, firebaseUser } = useAuthUser();
+  const { user, firebaseUser, isAuthenticated, setShowSignInModal } = useAuth();
   const navigate = useNavigate();
   const [theme, setTheme] = useState(() => {
     if (typeof window !== "undefined") {
@@ -166,27 +169,51 @@ export function Layout({ children }: LayoutProps) {
               >
                 {theme === "dark" ? <Sun className="w-5 h-5 text-yellow-400 transition-all" /> : <Moon className="w-5 h-5 text-blue-500 transition-all" />}
               </button>
-              <button
-                className="relative p-2 rounded-lg hover:bg-muted"
-                onClick={() => navigate("/notifications")}
-              >
-                <Bell className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full"></span>
-              </button>
+              
+              {isAuthenticated ? (
+                <>
+                  <button
+                    className="relative p-2 rounded-lg hover:bg-muted"
+                    onClick={() => navigate("/notifications")}
+                  >
+                    <Bell className="w-5 h-5" />
+                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full"></span>
+                  </button>
 
-              <Link
-                to="/profile"
-                className="flex items-center gap-2 cursor-pointer hover:bg-muted rounded-lg p-2"
-              >
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={user?.avatarUrl || firebaseUser?.photoURL || undefined} alt={user?.name || firebaseUser?.displayName || "User"} />
-                  <AvatarFallback>{(user?.name || firebaseUser?.displayName || "U").charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div className="hidden sm:block">
-                  <p className="text-sm font-medium">{user?.name || firebaseUser?.displayName || "User"}</p>
-                  <p className="text-xs text-muted-foreground">Level {user?.level || 1}</p>
+                  <Link
+                    to="/profile"
+                    className="flex items-center gap-2 cursor-pointer hover:bg-muted rounded-lg p-2"
+                  >
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user?.avatarUrl || firebaseUser?.photoURL || undefined} alt={user?.name || firebaseUser?.displayName || "User"} />
+                      <AvatarFallback>{(user?.name || firebaseUser?.displayName || "U").charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="hidden sm:block">
+                      <p className="text-sm font-medium">{user?.name || firebaseUser?.displayName || "User"}</p>
+                      <p className="text-xs text-muted-foreground">Level {user?.level || 1}</p>
+                    </div>
+                  </Link>
+                </>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowSignInModal(true)}
+                    className="hidden sm:flex"
+                  >
+                    <LogIn className="w-4 h-4 mr-2" />
+                    Sign In
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => setShowSignInModal(true)}
+                  >
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Sign Up
+                  </Button>
                 </div>
-              </Link>
+              )}
             </div>
           </div>
         </header>

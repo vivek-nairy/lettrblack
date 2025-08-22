@@ -14,10 +14,13 @@ import {
   Settings,
   Star,
   X,
+  LogIn,
+  UserPlus,
+  MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getGroupsByUser, createGroup, addXpToUser, subscribeToAllGroups, updateGroup } from "@/lib/firestore-utils";
-import { useAuthUser } from "../hooks/useAuthUser";
+import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -66,7 +69,7 @@ function modalReducer(state, action) {
 }
 
 export function Groups() {
-  const { user, firebaseUser } = useAuthUser();
+  const { user, firebaseUser, isAuthenticated, requireAuth } = useAuth();
   const navigate = useNavigate();
   const [groups, setGroups] = useState([]);
   const [showJoinModal, setShowJoinModal] = useState(false);
@@ -77,15 +80,13 @@ export function Groups() {
   const [modal, dispatchModal] = useReducer(modalReducer, initialModalState);
 
   useEffect(() => {
-    if (firebaseUser) {
-      // Use real-time subscription to get all groups
-      const unsubscribe = subscribeToAllGroups((newGroups) => {
-        setGroups(newGroups);
-      });
-      
-      return () => unsubscribe();
-    }
-  }, [firebaseUser]);
+    // Always subscribe to all groups for public preview
+    const unsubscribe = subscribeToAllGroups((newGroups) => {
+      setGroups(newGroups);
+    });
+    
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     console.log("[Groups] modal.open:", modal.open);
@@ -94,50 +95,53 @@ export function Groups() {
   const handleCreateGroup = async () => {
     console.log("[handleCreateGroup] called");
     dispatchModal({ type: "SET_ERROR", error: "" });
-    if (!firebaseUser) {
-      dispatchModal({ type: "SET_ERROR", error: "You must be signed in to create a group." });
-      return;
-    }
-    if (!modal.name.trim() || !modal.subject.trim()) {
-      dispatchModal({ type: "SET_ERROR", error: "Group name and subject are required." });
-      return;
-    }
-    dispatchModal({ type: "SET_LOADING", loading: true });
-    try {
-      let groupImageUrl = "";
-      if (modal.image) {
-        const fileRef = ref(storage, `group-images/${firebaseUser.uid}_${Date.now()}_${modal.image.name}`);
-        await uploadBytes(fileRef, modal.image);
-        groupImageUrl = await getDownloadURL(fileRef);
+    
+    requireAuth(async () => {
+      if (!firebaseUser) {
+        dispatchModal({ type: "SET_ERROR", error: "You must be signed in to create a group." });
+        return;
       }
-      let bannerUrl = "";
-      if (modal.banner) {
-        const bannerRef = ref(storage, `group-banners/${firebaseUser.uid}_${Date.now()}_${modal.banner.name}`);
-        await uploadBytes(bannerRef, modal.banner);
-        bannerUrl = await getDownloadURL(bannerRef);
+      if (!modal.name.trim() || !modal.subject.trim()) {
+        dispatchModal({ type: "SET_ERROR", error: "Group name and subject are required." });
+        return;
       }
-      const newGroup = {
-        name: modal.name.trim(),
-        subject: modal.subject.trim(),
-        description: modal.description.trim(),
-        bannerUrl, // Save banner image URL
-        groupImageUrl, // Save group image URL
-        id: crypto.randomUUID(),
-        ownerId: firebaseUser.uid,
-        memberIds: [firebaseUser.uid],
-        inviteCode: Math.random().toString(36).substring(2, 8),
-        createdAt: Date.now(),
-        isPrivate: false,
-      };
-      await createGroup(newGroup);
-      await addXpToUser(firebaseUser.uid, 10, "create_group", 10);
-      dispatchModal({ type: "CLOSE" });
-      // Groups will be updated automatically via real-time subscription
-    } catch (err) {
-      dispatchModal({ type: "SET_ERROR", error: err?.message || "Failed to create group. Please try again." });
-    } finally {
-      dispatchModal({ type: "SET_LOADING", loading: false });
-    }
+      dispatchModal({ type: "SET_LOADING", loading: true });
+      try {
+        let groupImageUrl = "";
+        if (modal.image) {
+          const fileRef = ref(storage, `group-images/${firebaseUser.uid}_${Date.now()}_${modal.image.name}`);
+          await uploadBytes(fileRef, modal.image);
+          groupImageUrl = await getDownloadURL(fileRef);
+        }
+        let bannerUrl = "";
+        if (modal.banner) {
+          const bannerRef = ref(storage, `group-banners/${firebaseUser.uid}_${Date.now()}_${modal.banner.name}`);
+          await uploadBytes(bannerRef, modal.banner);
+          bannerUrl = await getDownloadURL(bannerRef);
+        }
+        const newGroup = {
+          name: modal.name.trim(),
+          subject: modal.subject.trim(),
+          description: modal.description.trim(),
+          bannerUrl, // Save banner image URL
+          groupImageUrl, // Save group image URL
+          id: crypto.randomUUID(),
+          ownerId: firebaseUser.uid,
+          memberIds: [firebaseUser.uid],
+          inviteCode: Math.random().toString(36).substring(2, 8),
+          createdAt: Date.now(),
+          isPrivate: false,
+        };
+        await createGroup(newGroup);
+        await addXpToUser(firebaseUser.uid, 10, "create_group", 10);
+        dispatchModal({ type: "CLOSE" });
+        // Groups will be updated automatically via real-time subscription
+      } catch (err) {
+        dispatchModal({ type: "SET_ERROR", error: err?.message || "Failed to create group. Please try again." });
+      } finally {
+        dispatchModal({ type: "SET_LOADING", loading: false });
+      }
+    });
   };
 
   const handleCancel = () => {
@@ -182,13 +186,15 @@ export function Groups() {
   const handleJoinGroup = async (group: any) => {
     if (!firebaseUser) return;
     
-    try {
-      const updatedMemberIds = [...(group.memberIds || []), firebaseUser.uid];
-      await updateGroup(group.id, { memberIds: updatedMemberIds });
-      // Groups will be updated automatically via real-time subscription
-    } catch (error) {
-      console.error("Error joining group:", error);
-    }
+    requireAuth(async () => {
+      try {
+        const updatedMemberIds = [...(group.memberIds || []), firebaseUser.uid];
+        await updateGroup(group.id, { memberIds: updatedMemberIds });
+        // Groups will be updated automatically via real-time subscription
+      } catch (error) {
+        console.error("Error joining group:", error);
+      }
+    });
   };
 
   return (
@@ -206,17 +212,32 @@ export function Groups() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={handleOpenModal}
-              className="lettrblack-button flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              Create Group
-            </button>
-            <button className="bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors duration-200 rounded-lg px-4 py-2 font-medium flex items-center gap-2">
-              <Settings className="w-4 h-4" />
-              Manage
-            </button>
+            {isAuthenticated ? (
+              <>
+                <button
+                  onClick={handleOpenModal}
+                  className="lettrblack-button flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Create Group
+                </button>
+                <button className="bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors duration-200 rounded-lg px-4 py-2 font-medium flex items-center gap-2">
+                  <Settings className="w-4 h-4" />
+                  Manage
+                </button>
+              </>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Button onClick={() => requireAuth(() => {})} variant="outline">
+                  <LogIn className="h-4 w-4 mr-2" />
+                  Sign In
+                </Button>
+                <Button onClick={() => requireAuth(() => {})}>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Get Started
+                </Button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -393,13 +414,31 @@ export function Groups() {
                   </div>
                   {/* Actions */}
                   <div className="flex gap-2 mt-auto">
-                    {!group.memberIds?.includes(firebaseUser?.uid) && (
+                    {isAuthenticated ? (
+                      !group.memberIds?.includes(firebaseUser?.uid) ? (
+                        <button
+                          onClick={e => { e.stopPropagation(); handleJoinGroup(group); }}
+                          className="flex-1 bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors duration-200 rounded-lg flex items-center justify-center gap-2 text-xs py-1"
+                        >
+                          <Users className="w-4 h-4" />
+                          Join
+                        </button>
+                      ) : (
+                        <button
+                          onClick={e => { e.stopPropagation(); navigate(`/chat/${group.id}`); }}
+                          className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors duration-200 rounded-lg flex items-center justify-center gap-2 text-xs py-1"
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                          Chat
+                        </button>
+                      )
+                    ) : (
                       <button
-                        onClick={e => { e.stopPropagation(); handleJoinGroup(group); }}
+                        onClick={e => { e.stopPropagation(); requireAuth(() => {}); }}
                         className="flex-1 bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors duration-200 rounded-lg flex items-center justify-center gap-2 text-xs py-1"
                       >
-                        <Users className="w-4 h-4" />
-                        Join
+                        <LogIn className="w-4 h-4" />
+                        Sign In to Join
                       </button>
                     )}
                     <button
@@ -430,32 +469,49 @@ export function Groups() {
                 : "Join or create your first study group to start collaborating with other learners!"}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button
-                onClick={handleOpenModal}
-                className="lettrblack-button flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                Create Your First Group
-              </button>
-              <button
-                onClick={() => navigate('/groups/public')}
-                className="bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors duration-200 rounded-lg px-4 py-2 font-medium"
-              >
-                Browse Public Groups
-              </button>
+              {isAuthenticated ? (
+                <>
+                  <button
+                    onClick={handleOpenModal}
+                    className="lettrblack-button flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Create Your First Group
+                  </button>
+                  <button
+                    onClick={() => navigate('/groups/public')}
+                    className="bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors duration-200 rounded-lg px-4 py-2 font-medium"
+                  >
+                    Browse Public Groups
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Button onClick={() => requireAuth(() => {})}>
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Get Started
+                  </Button>
+                  <Button onClick={() => requireAuth(() => {})} variant="outline">
+                    <LogIn className="h-4 w-4 mr-2" />
+                    Sign In
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         )}
 
         {/* Floating Action Button */}
-        <div className="fixed bottom-6 right-6 z-40">
-          <button
-            className="lettrblack-button w-14 h-14 rounded-full shadow-2xl hover:shadow-primary/25 transition-all duration-300 hover:scale-110 flex items-center justify-center"
-            onClick={handleOpenModal}
-          >
-            <Plus className="w-6 h-6" />
-          </button>
-        </div>
+        {isAuthenticated && (
+          <div className="fixed bottom-6 right-6 z-40">
+            <button
+              className="lettrblack-button w-14 h-14 rounded-full shadow-2xl hover:shadow-primary/25 transition-all duration-300 hover:scale-110 flex items-center justify-center"
+              onClick={handleOpenModal}
+            >
+              <Plus className="w-6 h-6" />
+            </button>
+          </div>
+        )}
 
         {/* Create Group Modal */}
         {modal.open && (

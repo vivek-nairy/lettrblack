@@ -17,12 +17,14 @@ import {
   Volume2,
   Image,
   Sword,
-  X
+  X,
+  LogIn,
+  UserPlus
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useAuthUser } from "../hooks/useAuthUser";
+import { useAuth } from "../contexts/AuthContext";
 import { useXP } from "../contexts/XPContext";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -163,7 +165,7 @@ const filterOptions = [
 ];
 
 export default function LettrPlay() {
-  const { user, firebaseUser } = useAuthUser();
+  const { user, isAuthenticated, requireAuth } = useAuth();
   const { triggerXPConfetti } = useXP();
   const { toast } = useToast();
   const [selectedFilter, setSelectedFilter] = useState("all");
@@ -184,8 +186,10 @@ export default function LettrPlay() {
       return;
     }
 
-    setSelectedGame(game);
-    setShowGameModal(true);
+    requireAuth(() => {
+      setSelectedGame(game);
+      setShowGameModal(true);
+    });
   };
 
   const handleGameComplete = (xpEarned: number) => {
@@ -216,13 +220,26 @@ export default function LettrPlay() {
             </p>
           </div>
           <div className="flex items-center gap-4">
-            <div className="text-right">
-              <div className="flex items-center gap-2">
-                <Trophy className="h-5 w-5 text-yellow-500" />
-                <span className="font-semibold">{user?.xp || 0} XP</span>
+            {isAuthenticated ? (
+              <div className="text-right">
+                <div className="flex items-center gap-2">
+                  <Trophy className="h-5 w-5 text-yellow-500" />
+                  <span className="font-semibold">{user?.xp || 0} XP</span>
+                </div>
+                <p className="text-sm text-muted-foreground">Total earned</p>
               </div>
-              <p className="text-sm text-muted-foreground">Total earned</p>
-            </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Button onClick={() => requireAuth(() => {})} variant="outline">
+                  <LogIn className="h-4 w-4 mr-2" />
+                  Sign In
+                </Button>
+                <Button onClick={() => requireAuth(() => {})}>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Get Started
+                </Button>
+              </div>
+            )}
           </div>
         </div>
 
