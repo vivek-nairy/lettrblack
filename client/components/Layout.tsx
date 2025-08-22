@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   Home,
   Users,
@@ -7,22 +7,12 @@ import {
   Trophy,
   Crown,
   Store,
-  Search,
-  Bell,
-  User,
-  Menu,
   X,
   Sun,
   Moon,
-  Video,
   Gamepad2,
-  LogIn,
-  UserPlus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/contexts/AuthContext";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -40,8 +30,6 @@ const sidebarItems = [
 export function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  const { user, firebaseUser, isAuthenticated, setShowSignInModal } = useAuth();
-  const navigate = useNavigate();
   const [theme, setTheme] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("theme") || "dark";
@@ -59,10 +47,6 @@ export function Layout({ children }: LayoutProps) {
     }
     localStorage.setItem("theme", theme);
   }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -140,84 +124,6 @@ export function Layout({ children }: LayoutProps) {
 
       {/* Main content */}
       <div className="lg:ml-64">
-        {/* Top bar */}
-        <header className="bg-card border-b border-border sticky top-0 z-30">
-          <div className="flex items-center justify-between px-6 py-4">
-            <div className="flex items-center gap-4">
-              <button
-                className="lg:hidden p-2 rounded-md hover:bg-muted"
-                onClick={() => setSidebarOpen(true)}
-              >
-                <Menu className="w-5 h-5" />
-              </button>
-
-              <div className="relative w-full sm:w-96">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                <input
-                  type="text"
-                  placeholder="Search groups, notes, or users..."
-                  className="w-full pl-12 pr-4 py-2 bg-input border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground placeholder:text-muted-foreground"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <button
-                className="p-2 rounded-md hover:bg-muted transition-colors"
-                onClick={toggleTheme}
-                aria-label="Toggle theme"
-              >
-                {theme === "dark" ? <Sun className="w-5 h-5 text-yellow-400 transition-all" /> : <Moon className="w-5 h-5 text-blue-500 transition-all" />}
-              </button>
-              
-              {isAuthenticated ? (
-                <>
-                  <button
-                    className="relative p-2 rounded-lg hover:bg-muted"
-                    onClick={() => navigate("/notifications")}
-                  >
-                    <Bell className="w-5 h-5" />
-                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full"></span>
-                  </button>
-
-                  <Link
-                    to="/profile"
-                    className="flex items-center gap-2 cursor-pointer hover:bg-muted rounded-lg p-2"
-                  >
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={user?.avatarUrl || firebaseUser?.photoURL || undefined} alt={user?.name || firebaseUser?.displayName || "User"} />
-                      <AvatarFallback>{(user?.name || firebaseUser?.displayName || "U").charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div className="hidden sm:block">
-                      <p className="text-sm font-medium">{user?.name || firebaseUser?.displayName || "User"}</p>
-                      <p className="text-xs text-muted-foreground">Level {user?.level || 1}</p>
-                    </div>
-                  </Link>
-                </>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowSignInModal(true)}
-                    className="hidden sm:flex"
-                  >
-                    <LogIn className="w-4 h-4 mr-2" />
-                    Sign In
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => setShowSignInModal(true)}
-                  >
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    Sign Up
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-        </header>
-
         {/* Page content */}
         <main className="p-6">{children}</main>
       </div>
